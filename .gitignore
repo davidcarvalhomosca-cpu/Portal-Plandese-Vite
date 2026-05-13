@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+*.timestamp-*.mjs
+portal_antigo.html
+migrar.py
+super_migrar.py
