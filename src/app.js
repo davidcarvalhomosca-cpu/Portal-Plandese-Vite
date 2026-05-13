@@ -592,7 +592,8 @@ function initAdmin(){
   initCompras().catch(e=>console.warn('initCompras:',e));
   // Inicializa filtros MOA
   initMOAFilters().catch(e=>console.warn('initMOAFilters:',e));
-  goTo('historico',document.getElementById('nav-hist'));
+  // Navegar para o Painel Principal por defeito
+  goTo('painel',document.getElementById('nav-painel'));
 }
 
 function populateFilterSelects(){
@@ -1288,6 +1289,7 @@ async function refreshPortal(){
     if(activeSection){
       const id = activeSection.id.replace(/^sec-/,'');
       const renderMap = {
+        'painel': ()=>renderPainel(),
         'historico': ()=>applyFilter(),
         'empresas-moa': ()=>renderEmpresasMOA(),
         'obras': ()=>renderObras(),
@@ -5062,6 +5064,7 @@ window.addEventListener('resize', function(){
 
 // Todas as secções configuráveis e os seus rótulos
 const ALL_SECTIONS = [
+  {id:'painel',      label:'Painel Principal'},
   {id:'historico',   label:'Folha de Ponto'},
   {id:'semana',      label:'Fecho Semanal'},
   {id:'compras',     label:'Pedidos de Compra'},
@@ -5084,10 +5087,10 @@ const CONFIGURABLE_ROLES = [
 
 // Permissões padrão (usadas se não houver nada guardado)
 const DEFAULT_PERMISSIONS = {
-  diretor_obra: ['historico','semana','compras','faturas','equipamentos','producao','obras','colaboradores'],
-  compras:      ['compras'],
-  financeiro:   ['faturas','compras'],
-  comercial:    ['comercial'],
+  diretor_obra: ['painel','historico','semana','compras','faturas','equipamentos','producao','obras','colaboradores'],
+  compras:      ['painel','compras'],
+  financeiro:   ['painel','faturas','compras'],
+  comercial:    ['painel','comercial'],
 };
 
 const PERM_STORAGE_KEY = 'plandese_role_permissions_v1';
@@ -5585,11 +5588,334 @@ function deleteProposta(id){
   setInterval(updateClocks, 1000);
 })();
 
+// ═══════════════════════════════════════
+//  PAINEL PRINCIPAL — Dashboard personalizável
+// ═══════════════════════════════════════
+
+// ── Estado do painel ──────────────────────────────────────────────
+let _painelConfig = null; // carregado do Supabase / localStorage
+
+const PAINEL_WIDGETS_DEF = [
+  { id:'obras_ativas',    label:'Obras Ativas',       icon:'<path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/>',  section:'obras' },
+  { id:'colaboradores',   label:'Colaboradores',      icon:'<path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>',  section:'colaboradores' },
+  { id:'ponto_semana',    label:'Ponto da Semana',    icon:'<path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>',  section:'historico' },
+  { id:'compras_recentes',label:'Compras Pendentes',  icon:'<path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/>',  section:'compras' },
+  { id:'faturas',         label:'Faturas',            icon:'<path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zM7 7h7v2H7V7zm10 12H7v-2h10v2zm0-4H7v-2h10v2zm-4-7V3.5L18.5 9H13z"/>',  section:'faturas' },
+  { id:'equipamentos',    label:'Equipamentos',       icon:'<path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/>',  section:'equipamentos' },
+  { id:'combustivel',     label:'Combustível',        icon:'<path d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1.5v5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V9c0-.69-.28-1.32-.73-1.77zM18 10c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zM8 18v-4.5H6L10 7v5h2l-4 6z"/>',  section:'combustivel' },
+];
+
+const PAINEL_DEFAULT_CONFIG = {
+  widgets: ['obras_ativas','colaboradores','ponto_semana','compras_recentes'],
+  obras_filtro: [], // vazio = todas as obras
+};
+
+// ── Carregar config do Supabase ────────────────────────────────────
+async function loadPainelConfig() {
+  // Tentar carregar do Supabase
+  if (currentUser?.key) {
+    try {
+      const { data } = await sb.from('utilizadores').select('painel_config').eq('username', currentUser.key).single();
+      if (data?.painel_config) {
+        _painelConfig = { ...PAINEL_DEFAULT_CONFIG, ...data.painel_config };
+        return;
+      }
+    } catch(e) { console.warn('loadPainelConfig:', e); }
+  }
+  // Fallback: localStorage
+  try {
+    const raw = localStorage.getItem('plandese_painel_config_' + (currentUser?.key || 'guest'));
+    if (raw) { _painelConfig = { ...PAINEL_DEFAULT_CONFIG, ...JSON.parse(raw) }; return; }
+  } catch(e) {}
+  _painelConfig = { ...PAINEL_DEFAULT_CONFIG };
+}
+
+// ── Guardar config no Supabase ─────────────────────────────────────
+async function savePainelConfig(cfg) {
+  _painelConfig = cfg;
+  // localStorage como backup imediato
+  try { localStorage.setItem('plandese_painel_config_' + (currentUser?.key || 'guest'), JSON.stringify(cfg)); } catch(e) {}
+  // Supabase
+  if (currentUser?.key) {
+    try {
+      await sb.from('utilizadores').update({ painel_config: cfg }).eq('username', currentUser.key);
+    } catch(e) { console.warn('savePainelConfig:', e); }
+  }
+}
+
+// ── Renderizar painel ──────────────────────────────────────────────
+async function renderPainel() {
+  const grid = document.getElementById('painel-grid');
+  if (!grid) return;
+
+  // Carregar config se ainda não tiver
+  if (!_painelConfig) await loadPainelConfig();
+
+  const cfg = _painelConfig || PAINEL_DEFAULT_CONFIG;
+  const obrasAtivas = OBRAS.filter(o => o.ativa);
+  const obrasFiltro = (cfg.obras_filtro || []).filter(id => obrasAtivas.some(o => o.id === id));
+
+  // Badge de obras filtradas
+  const badge = document.getElementById('painel-obras-badge');
+  const badgeTxt = document.getElementById('painel-obras-badge-txt');
+  if (badge && badgeTxt) {
+    if (obrasFiltro.length > 0) {
+      const nomes = obrasFiltro.map(id => obrasAtivas.find(o => o.id === id)?.nome || id).join(', ');
+      badgeTxt.textContent = `A mostrar dados de: ${nomes}`;
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  // Saudação personalizada
+  const titulo = document.getElementById('painel-titulo');
+  if (titulo) {
+    const h = new Date().getHours();
+    const saudacao = h < 12 ? 'Bom dia' : h < 19 ? 'Boa tarde' : 'Boa noite';
+    const nomePropio = currentUser?.nome?.split(' ')[0] || '';
+    titulo.textContent = nomePropio ? `${saudacao}, ${nomePropio}` : 'Painel Principal';
+  }
+
+  // Carregar dados necessários para os widgets ativos
+  const widgets = (cfg.widgets || []).filter(wid => PAINEL_WIDGETS_DEF.some(w => w.id === wid));
+
+  if (widgets.length === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--gray-400);font-size:14px">
+      <svg viewBox="0 0 24 24" fill="currentColor" style="width:40px;height:40px;margin:0 auto 12px;display:block;opacity:.3"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+      Nenhum widget selecionado. Clique em <strong>Personalizar</strong> para configurar o painel.
+    </div>`;
+    return;
+  }
+
+  // Mostrar loading
+  grid.innerHTML = widgets.map(() =>
+    `<div class="card" style="min-height:140px;display:flex;align-items:center;justify-content:center">
+      <div style="width:24px;height:24px;border:3px solid var(--gray-200);border-top-color:var(--blue);border-radius:50%;animation:spin 1s linear infinite"></div>
+    </div>`
+  ).join('');
+
+  // Construir cada widget
+  const htmlWidgets = await Promise.all(widgets.map(wid => buildWidget(wid, obrasFiltro)));
+  grid.innerHTML = htmlWidgets.join('');
+}
+
+// ── Construir HTML de cada widget ─────────────────────────────────
+async function buildWidget(wid, obrasFiltro) {
+  const def = PAINEL_WIDGETS_DEF.find(w => w.id === wid);
+  if (!def) return '';
+
+  const goBtn = `<button class="btn btn-secondary btn-sm" onclick="goTo('${def.section}',document.querySelector('.sidebar .nav-btn[onclick*=\\'${def.section}\\']'))" style="margin-top:12px;font-size:11px">Ver tudo →</button>`;
+
+  try {
+    if (wid === 'obras_ativas') {
+      const obras = OBRAS.filter(o => o.ativa && (obrasFiltro.length === 0 || obrasFiltro.includes(o.id)));
+      const rows = obras.slice(0, 5).map(o => `<div style="padding:6px 0;border-bottom:1px solid var(--gray-100);font-size:13px;color:var(--gray-700)">${o.nome}</div>`).join('');
+      const extra = obras.length > 5 ? `<div style="font-size:11px;color:var(--gray-400);margin-top:6px">+${obras.length-5} mais</div>` : '';
+      return _painelCard(def, `<div style="font-size:36px;font-weight:700;color:var(--blue);line-height:1">${obras.length}</div><div style="font-size:12px;color:var(--gray-500);margin-bottom:12px">obras ativas</div>${rows}${extra}${goBtn}`);
+    }
+
+    if (wid === 'colaboradores') {
+      const ativos = COLABORADORES.filter(c => c.ativo);
+      const byFunc = {};
+      ativos.forEach(c => { byFunc[c.func] = (byFunc[c.func]||0)+1; });
+      const top3 = Object.entries(byFunc).sort((a,b)=>b[1]-a[1]).slice(0,3);
+      const rows = top3.map(([f,n]) => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--gray-100);font-size:13px"><span style="color:var(--gray-700)">${f}</span><span style="font-weight:600;color:var(--gray-900)">${n}</span></div>`).join('');
+      return _painelCard(def, `<div style="font-size:36px;font-weight:700;color:var(--blue);line-height:1">${ativos.length}</div><div style="font-size:12px;color:var(--gray-500);margin-bottom:12px">colaboradores ativos</div>${rows}${goBtn}`);
+    }
+
+    if (wid === 'ponto_semana') {
+      // Registos desta semana (já carregados em REGISTOS)
+      const mon = getMonday(new Date());
+      const days = [];
+      for(let i=0;i<6;i++){ const d=new Date(mon); d.setDate(d.getDate()+i); days.push(fmt(d)); }
+      let total = 0, presentes = new Set();
+      days.forEach(dk => {
+        const regs = REGISTOS[dk] || [];
+        const filtrados = obrasFiltro.length > 0 ? regs.filter(r => obrasFiltro.includes(r.obra)) : regs;
+        filtrados.forEach(r => { presentes.add(r.colabN); if(r.tipo==='Normal'||r.tipo==='Hora Extra') total++; });
+      });
+      const hoje = fmt(new Date());
+      const hoje_regs = (REGISTOS[hoje] || []);
+      const hoje_pres = obrasFiltro.length > 0 ? hoje_regs.filter(r => obrasFiltro.includes(r.obra)).length : hoje_regs.length;
+      return _painelCard(def, `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div style="text-align:center;padding:12px;background:var(--blue-50,#eff6ff);border-radius:8px">
+            <div style="font-size:28px;font-weight:700;color:var(--blue)">${hoje_pres}</div>
+            <div style="font-size:11px;color:var(--gray-500)">hoje</div>
+          </div>
+          <div style="text-align:center;padding:12px;background:var(--gray-50);border-radius:8px">
+            <div style="font-size:28px;font-weight:700;color:var(--gray-700)">${total}</div>
+            <div style="font-size:11px;color:var(--gray-500)">esta semana</div>
+          </div>
+        </div>
+        ${goBtn}`);
+    }
+
+    if (wid === 'compras_recentes') {
+      const compras = (typeof COMPRAS !== 'undefined' ? COMPRAS : []);
+      const pendentes = compras.filter(c => (c.estado||'').toLowerCase() === 'pendente');
+      const recentes = compras.slice(0, 4);
+      const rows = recentes.map(c => {
+        const est = (c.estado||'pendente').toLowerCase();
+        const cor = est==='pendente'?'var(--orange,#ea580c)':est==='aprovado'?'var(--green)':'var(--gray-400)';
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--gray-100);font-size:12px">
+          <span style="color:var(--gray-700);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%">${c.descricao||c.fornecedor||'—'}</span>
+          <span style="font-size:10px;font-weight:600;color:${cor};white-space:nowrap">${c.estado||'—'}</span>
+        </div>`;
+      }).join('');
+      return _painelCard(def, `<div style="font-size:36px;font-weight:700;color:var(--orange,#ea580c);line-height:1">${pendentes.length}</div><div style="font-size:12px;color:var(--gray-500);margin-bottom:12px">pedidos pendentes</div>${rows||'<div style="font-size:13px;color:var(--gray-400);padding:8px 0">Sem compras registadas</div>'}${goBtn}`);
+    }
+
+    if (wid === 'faturas') {
+      const fats = (typeof FATURAS !== 'undefined' ? FATURAS : []);
+      const total = fats.reduce((s,f) => s+(parseFloat(f.total)||0), 0);
+      const recentes = fats.slice(0,4);
+      const rows = recentes.map(f => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--gray-100);font-size:12px">
+        <span style="color:var(--gray-700);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%">${f.fornecedor||f.numero||'—'}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gray-600)">${(parseFloat(f.total)||0).toLocaleString('pt-PT',{minimumFractionDigits:2})} €</span>
+      </div>`).join('');
+      return _painelCard(def, `<div style="font-size:24px;font-weight:700;color:var(--gray-800);line-height:1;font-family:'DM Mono',monospace">${total.toLocaleString('pt-PT',{minimumFractionDigits:2})} €</div><div style="font-size:12px;color:var(--gray-500);margin-bottom:12px">${fats.length} faturas</div>${rows||'<div style="font-size:13px;color:var(--gray-400);padding:8px 0">Sem faturas carregadas</div>'}${goBtn}`);
+    }
+
+    if (wid === 'equipamentos') {
+      const equips = (typeof EQUIPAMENTOS !== 'undefined' ? EQUIPAMENTOS : []);
+      const bycat = {};
+      equips.forEach(e => { const k=e.categoria||'outro'; bycat[k]=(bycat[k]||0)+1; });
+      const rows = Object.entries(bycat).map(([k,n]) => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--gray-100);font-size:13px"><span style="color:var(--gray-700);text-transform:capitalize">${k}</span><span style="font-weight:600">${n}</span></div>`).join('');
+      return _painelCard(def, `<div style="font-size:36px;font-weight:700;color:var(--blue);line-height:1">${equips.length}</div><div style="font-size:12px;color:var(--gray-500);margin-bottom:12px">equipamentos</div>${rows||'<div style="font-size:13px;color:var(--gray-400);padding:8px 0">Sem equipamentos</div>'}${goBtn}`);
+    }
+
+    if (wid === 'combustivel') {
+      // Buscar últimos registos de combustível do Supabase
+      let combustRegs = [];
+      try {
+        const { data } = await sb.from('registos_combustivel').select('*').order('data',{ascending:false}).order('criado_em',{ascending:false}).limit(5);
+        if (data) combustRegs = data;
+      } catch(e) {}
+      const totalLitros = combustRegs.reduce((s,r) => s+(parseFloat(r.litros)||0), 0);
+      const rows = combustRegs.slice(0,4).map(r => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--gray-100);font-size:12px">
+        <span style="color:var(--gray-700)">${r.data||'—'} · ${r.tipo_combustivel||r.tipo||'—'}</span>
+        <span style="font-weight:600;color:var(--gray-900)">${r.litros||0} L</span>
+      </div>`).join('');
+      return _painelCard(def, `<div style="font-size:36px;font-weight:700;color:var(--blue);line-height:1">${totalLitros.toFixed(0)}<span style="font-size:16px;font-weight:400"> L</span></div><div style="font-size:12px;color:var(--gray-500);margin-bottom:12px">últimos 5 registos</div>${rows||'<div style="font-size:13px;color:var(--gray-400);padding:8px 0">Sem registos de combustível</div>'}${goBtn}`);
+    }
+
+  } catch(e) {
+    console.warn('buildWidget error:', wid, e);
+    return _painelCard(def, `<div style="font-size:13px;color:var(--red,#dc2626);padding:12px 0">Erro ao carregar dados</div>`);
+  }
+
+  return '';
+}
+
+// ── Helper: card HTML ──────────────────────────────────────────────
+function _painelCard(def, bodyHtml) {
+  return `<div class="card" style="padding:20px;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <div style="width:36px;height:36px;border-radius:8px;background:var(--blue-50,#eff6ff);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;color:var(--blue)">${def.icon}</svg>
+      </div>
+      <div style="font-size:13px;font-weight:600;color:var(--gray-700)">${def.label}</div>
+    </div>
+    ${bodyHtml}
+  </div>`;
+}
+
+// ── Abrir modal de personalização ──────────────────────────────────
+function openPainelCustomizer() {
+  if (!_painelConfig) _painelConfig = { ...PAINEL_DEFAULT_CONFIG };
+  const cfg = _painelConfig;
+
+  // Widgets checkboxes
+  const widChecks = document.getElementById('painel-widget-checks');
+  if (widChecks) {
+    widChecks.innerHTML = PAINEL_WIDGETS_DEF.map(w => {
+      const checked = (cfg.widgets || []).includes(w.id);
+      return `<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid ${checked?'var(--blue)':'var(--gray-200)'};border-radius:8px;cursor:pointer;background:${checked?'var(--blue-50,#eff6ff)':'white'};transition:all .15s;font-size:13px" id="painel-wlbl-${w.id}">
+        <input type="checkbox" id="painel-wchk-${w.id}" ${checked?'checked':''} onchange="painelWChkChange('${w.id}',this)" style="accent-color:var(--blue)"/>
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px;flex-shrink:0;color:var(--blue)">${w.icon}</svg>
+        ${w.label}
+      </label>`;
+    }).join('');
+  }
+
+  // Obras checkboxes
+  const obraChecks = document.getElementById('painel-obra-checks');
+  if (obraChecks) {
+    const obrasAtivas = OBRAS.filter(o => o.ativa);
+    if (obrasAtivas.length === 0) {
+      obraChecks.innerHTML = '<div style="font-size:13px;color:var(--gray-400);padding:8px 0">Sem obras ativas</div>';
+    } else {
+      obraChecks.innerHTML = obrasAtivas.map(o => {
+        const checked = (cfg.obras_filtro || []).includes(o.id);
+        return `<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 10px;border-radius:6px;cursor:pointer;background:${checked?'var(--blue-50,#eff6ff)':'transparent'};transition:all .15s" id="painel-obra-lbl-${o.id}">
+          <input type="checkbox" id="painel-obra-chk-${o.id}" ${checked?'checked':''} onchange="painelObraChkChange('${o.id}',this)" style="accent-color:var(--blue)"/>
+          ${o.nome}
+        </label>`;
+      }).join('');
+    }
+  }
+
+  const modal = document.getElementById('painel-modal-bg');
+  if (modal) { modal.style.display = 'flex'; modal.classList.add('open'); }
+}
+
+function painelWChkChange(wid, chk) {
+  const lbl = document.getElementById('painel-wlbl-'+wid);
+  if (lbl) {
+    lbl.style.borderColor = chk.checked ? 'var(--blue)' : 'var(--gray-200)';
+    lbl.style.background = chk.checked ? 'var(--blue-50,#eff6ff)' : 'white';
+  }
+}
+
+function painelObraChkChange(obraId, chk) {
+  const lbl = document.getElementById('painel-obra-lbl-'+obraId);
+  if (lbl) lbl.style.background = chk.checked ? 'var(--blue-50,#eff6ff)' : 'transparent';
+}
+
+function closePainelCustomizer() {
+  const modal = document.getElementById('painel-modal-bg');
+  if (modal) { modal.style.display = 'none'; modal.classList.remove('open'); }
+}
+
+async function savePainelCustomizer() {
+  // Ler widgets selecionados
+  const widgets = PAINEL_WIDGETS_DEF.map(w => w.id).filter(wid => {
+    const chk = document.getElementById('painel-wchk-'+wid);
+    return chk && chk.checked;
+  });
+  // Ler obras selecionadas
+  const obras_filtro = OBRAS.filter(o => o.ativa).map(o => o.id).filter(id => {
+    const chk = document.getElementById('painel-obra-chk-'+id);
+    return chk && chk.checked;
+  });
+
+  const cfg = { widgets, obras_filtro };
+  await savePainelConfig(cfg);
+  closePainelCustomizer();
+  showToast('Painel guardado ✓');
+  renderPainel();
+}
+
+// ── Hook goTo para o painel ────────────────────────────────────────
+(function(){
+  const _origGoTo = goTo;
+  goTo = function(id, btn) {
+    _origGoTo(id, btn);
+    if (id === 'painel') renderPainel();
+  };
+})();
+
 // ── Expor funções globais para handlers HTML (onclick=, onchange=, oninput=, etc.) ──
 // Necessário porque módulos ES têm scope próprio e não expõem funções ao window automaticamente.
 Object.assign(window, {
   // Auth
   doLogin, doLogout,
+
+  // Painel Principal
+  openPainelCustomizer, closePainelCustomizer, savePainelCustomizer,
+  painelWChkChange, painelObraChkChange,
 
   // Navegação admin
   goTo, toggleNavGrp,

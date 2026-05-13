@@ -45,14 +45,15 @@ export const ROLE_LABELS = {
 };
 
 export const ROLE_ACCESS = {
-  'admin':        {sections:['historico','compras','faturas','equipamentos','combustivel','producao','obras','colaboradores','utilizadores','empresas-moa'], default:'historico'},
-  'diretor_obra': {sections:['historico','compras','faturas','equipamentos','combustivel','producao','obras','colaboradores','empresas-moa'], default:'historico'},
-  'compras':      {sections:['compras'], default:'compras'},
-  'financeiro':   {sections:['faturas','compras'], default:'faturas'},
-  'comercial':    {sections:['comercial'], default:'comercial'},
+  'admin':        {sections:['painel','historico','compras','faturas','equipamentos','combustivel','producao','obras','colaboradores','utilizadores','empresas-moa'], default:'painel'},
+  'diretor_obra': {sections:['painel','historico','compras','faturas','equipamentos','combustivel','producao','obras','colaboradores','empresas-moa'], default:'painel'},
+  'compras':      {sections:['painel','compras'], default:'painel'},
+  'financeiro':   {sections:['painel','faturas','compras'], default:'painel'},
+  'comercial':    {sections:['painel','comercial'], default:'painel'},
 };
 
 export const NAV_GROUP_SECTIONS = {
+  'pnl': ['painel'],
   'rh':  ['historico'],
   'cmp': ['compras'],
   'fin': ['faturas'],
