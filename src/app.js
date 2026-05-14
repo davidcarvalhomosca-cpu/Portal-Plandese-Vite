@@ -854,6 +854,7 @@ async function exportMensal(){
   workbook.creator='Plandese SA';
 
   const colabsAtivos=[...COLABORADORES].filter(c=>c.ativo).sort((a,b)=>a.n-b.n);
+  const summaryData=[]; // acumula dados para Folha de Fecho
 
   // Colors (exact from original)
   const CC_C='FF0000FF', H_C='FF00B050', TOT_C='FF002060', NORM_C='FFFF00FF', EXTRA_C='FF993300';
@@ -937,6 +938,7 @@ async function exportMensal(){
 
     // ── DATA ROWS ───────────────────────────────────────────────────────────
     let totN=0,totE=0,dTrab=0,dFer=0,dFalt=0,dDes=0;
+    const obraHoras={}; // {obraId:{n,e}} para Folha de Fecho
 
     for(let i=0;i<datas.length;i++){
       const d=datas[i]; const row=9+i;
@@ -968,10 +970,14 @@ async function exportMensal(){
         if(tipo==='Férias'){ferV=1;dFer++;}
         else if(tipo&&tipo.includes('Falta')){faltV=1;dFalt++;}
         else if(tipo&&(tipo.includes('Desloc')||tipo==='Deslocado')){
-          if(hc.t>0){normH=hc.n||'';extraH=hc.e||'';totalH=hc.t;totN+=hc.n;totE+=hc.e;dTrab++;}
+          if(hc.t>0){normH=hc.n||'';extraH=hc.e||'';totalH=hc.t;totN+=hc.n;totE+=hc.e;dTrab++;
+            if(reg.obra_id){if(!obraHoras[reg.obra_id])obraHoras[reg.obra_id]={n:0,e:0};obraHoras[reg.obra_id].n+=hc.n;obraHoras[reg.obra_id].e+=hc.e;}
+          }
           desV=1;dDes++;
         } else {
-          if(hc.t>0){normH=hc.n||'';extraH=hc.e||'';totalH=hc.t;totN+=hc.n;totE+=hc.e;dTrab++;}
+          if(hc.t>0){normH=hc.n||'';extraH=hc.e||'';totalH=hc.t;totN+=hc.n;totE+=hc.e;dTrab++;
+            if(reg.obra_id){if(!obraHoras[reg.obra_id])obraHoras[reg.obra_id]={n:0,e:0};obraHoras[reg.obra_id].n+=hc.n;obraHoras[reg.obra_id].e+=hc.e;}
+          }
         }
       }
 
@@ -1015,7 +1021,160 @@ async function exportMensal(){
     sc(sr+9,28,'Dias de férias',false,null,F_FE); sc(sr+9,29,dFer,false,null,null,'center');
     sc(sr+10,28,'Dias de falta',false,null,F_FA); sc(sr+10,29,dFalt,false,null,null,'center');
     sc(sr+11,28,'Dias deslocado',false,null,F_DE); sc(sr+11,29,dDes,false,null,null,'center');
+    summaryData.push({n,nome,func,totN,totE,obraHoras});
   }
+
+  // ── FOLHA DE FECHO ──────────────────────────────────────────────────────────
+  {
+    const wsFecho=workbook.addWorksheet('Folha de Fecho');
+
+    // Ordenar obras pelo nome
+    const allObraIds=[...new Set(summaryData.flatMap(w=>Object.keys(w.obraHoras)))].sort(
+      (a,b)=>(OBRAS.find(o=>o.id===a)?.nome||'').localeCompare(OBRAS.find(o=>o.id===b)?.nome||'')
+    );
+    const allObras=allObraIds.map(id=>({id,nome:OBRAS.find(o=>o.id===id)?.nome||id}));
+
+    const fixedCount=6; // Nº, Nome, Função, H.Normais, H.Extra, Total
+    const obraColStart=fixedCount+1;
+    const totalCols=fixedCount+allObras.length*2;
+
+    // Larguras de coluna
+    wsFecho.columns=[
+      {width:6},{width:26},{width:14},{width:11},{width:11},{width:11},
+      ...allObras.flatMap(()=>[{width:10},{width:9}])
+    ];
+
+    // ── Linha 1: Título ──
+    wsFecho.mergeCells(1,1,1,totalCols);
+    let fc=wsFecho.getCell(1,1);
+    fc.value='PLANDESE, SA — Folha de Fecho';
+    fc.font=exFont(true,14,'FFFFFFFF');
+    fc.alignment=exAlign();
+    for(let ci=1;ci<=totalCols;ci++) wsFecho.getCell(1,ci).fill=exFill('FF002060');
+    wsFecho.getRow(1).height=24;
+
+    // ── Linha 2: Período ──
+    wsFecho.mergeCells(2,1,2,totalCols);
+    fc=wsFecho.getCell(2,1);
+    const pd1=`${String(dataIni.getDate()).padStart(2,'0')}/${String(dataIni.getMonth()+1).padStart(2,'0')}/${dataIni.getFullYear()}`;
+    const pd2=`${String(dataFim.getDate()).padStart(2,'0')}/${String(dataFim.getMonth()+1).padStart(2,'0')}/${dataFim.getFullYear()}`;
+    fc.value=`Período: ${pd1} a ${pd2}  —  Mês: ${mesNome} ${ano}`;
+    fc.font=exFont(false,10,'FFFFFFFF');
+    fc.alignment=exAlign();
+    for(let ci=1;ci<=totalCols;ci++) wsFecho.getCell(2,ci).fill=exFill('FF1E3A5F');
+    wsFecho.getRow(2).height=16;
+
+    // ── Linhas 3-4: Cabeçalhos (2 linhas para agrupar obras) ──
+    const hBg='FF1D4ED8';
+    const hBg2='FF1E40AF';
+    const hFg='FFFFFFFF';
+    const bH=exBorder('thin','thin','thin','thin');
+
+    // Colunas fixas (span 2 linhas)
+    const fixedHdrs=['Nº','Nome','Função','H.Normais','H.Extra','Total'];
+    fixedHdrs.forEach((v,i)=>{
+      wsFecho.mergeCells(3,i+1,4,i+1);
+      fc=wsFecho.getCell(3,i+1);
+      fc.value=v; fc.font=exFont(true,10,hFg);
+      fc.alignment=exAlign('center','middle',true);
+      for(let r=3;r<=4;r++){wsFecho.getCell(r,i+1).fill=exFill(hBg);wsFecho.getCell(r,i+1).border=bH;}
+    });
+    // Colunas de obras (grupo na linha 3, sub-cabeçalhos na linha 4)
+    allObras.forEach((obra,i)=>{
+      const cH=obraColStart+i*2; const cP=cH+1;
+      wsFecho.mergeCells(3,cH,3,cP);
+      fc=wsFecho.getCell(3,cH);
+      fc.value=obra.nome; fc.font=exFont(true,9,hFg);
+      fc.alignment=exAlign('center','middle',true);
+      for(let ci=cH;ci<=cP;ci++){wsFecho.getCell(3,ci).fill=exFill(hBg2);wsFecho.getCell(3,ci).border=bH;}
+      // Sub-cabeçalhos linha 4
+      fc=wsFecho.getCell(4,cH); fc.value='Horas'; fc.font=exFont(false,8,hFg);
+      fc.alignment=exAlign(); fc.fill=exFill(hBg2); fc.border=bH;
+      fc=wsFecho.getCell(4,cP); fc.value='%'; fc.font=exFont(false,8,hFg);
+      fc.alignment=exAlign(); fc.fill=exFill(hBg2); fc.border=bH;
+    });
+    wsFecho.getRow(3).height=28; wsFecho.getRow(4).height=16;
+
+    // ── Linhas de dados ──
+    const grandObraH={};
+    allObraIds.forEach(id=>{grandObraH[id]={n:0,e:0};});
+    let gN=0,gE=0;
+
+    summaryData.forEach((w,idx)=>{
+      const row=5+idx;
+      const totW=Math.round((w.totN+w.totE)*100)/100;
+      gN+=w.totN; gE+=w.totE;
+      allObraIds.forEach(id=>{if(w.obraHoras[id]){grandObraH[id].n+=w.obraHoras[id].n;grandObraH[id].e+=w.obraHoras[id].e;}});
+
+      const rowFg=idx%2===0?'FFFFFFFF':'FFF0F4FF';
+      const bR=exBorder('thin','thin','thin','thin');
+
+      function wc(col,val,bold,argb,fg){
+        const cell=wsFecho.getCell(row,col);
+        cell.value=(val!==null&&val!==undefined&&val!=='')?val:null;
+        cell.font=exFont(bold||false,10,argb||null);
+        cell.alignment=exAlign(typeof val==='number'?'center':'left','middle');
+        cell.fill=exFill(fg||rowFg); cell.border=bR;
+      }
+      wc(1,w.n,false,'FF374151');
+      wc(2,w.nome,true,'FF111827');
+      wc(3,w.func,false,'FF6B7280');
+      wc(4,Math.round(w.totN*100)/100,true,'FF00B050');
+      wc(5,Math.round(w.totE*100)/100,true,'FF993300');
+      wc(6,totW,true,'FF002060');
+
+      allObras.forEach((obra,i)=>{
+        const cH=obraColStart+i*2; const cP=cH+1;
+        const oH=w.obraHoras[obra.id]||{n:0,e:0};
+        const oT=Math.round((oH.n+oH.e)*100)/100;
+        const pct=totW>0?Math.round(oT/totW*1000)/10:0;
+        wc(cH,oT>0?oT:null,false,'FF1D4ED8');
+        const pcell=wsFecho.getCell(row,cP);
+        pcell.value=oT>0?pct:null;
+        pcell.font=exFont(false,10,'FF6B7280');
+        pcell.alignment=exAlign('center','middle');
+        pcell.fill=exFill(rowFg); pcell.border=bR;
+        if(oT>0) pcell.numFmt='0.0"%"';
+      });
+      wsFecho.getRow(row).height=18;
+    });
+
+    // ── Linha de Totais ──
+    const totRow=5+summaryData.length;
+    const gT=Math.round((gN+gE)*100)/100;
+    const bTot=exBorder('medium','medium','medium','medium');
+
+    function tc(col,val,bold,argb){
+      const cell=wsFecho.getCell(totRow,col);
+      cell.value=(val!==null&&val!==undefined)?val:null;
+      cell.font=exFont(bold||false,10,argb||null);
+      cell.alignment=exAlign(typeof val==='number'?'center':'left','middle');
+      cell.fill=exFill('FFE8F0FE'); cell.border=bTot;
+    }
+    wsFecho.mergeCells(totRow,1,totRow,3);
+    tc(1,'TOTAL GERAL',true,'FF002060');
+    wsFecho.getCell(totRow,2).fill=exFill('FFE8F0FE'); wsFecho.getCell(totRow,2).border=bTot;
+    wsFecho.getCell(totRow,3).fill=exFill('FFE8F0FE'); wsFecho.getCell(totRow,3).border=bTot;
+    tc(4,Math.round(gN*100)/100,true,'FF00B050');
+    tc(5,Math.round(gE*100)/100,true,'FF993300');
+    tc(6,gT,true,'FF002060');
+
+    allObras.forEach((obra,i)=>{
+      const cH=obraColStart+i*2; const cP=cH+1;
+      const oH=grandObraH[obra.id]||{n:0,e:0};
+      const oT=Math.round((oH.n+oH.e)*100)/100;
+      const pct=gT>0?Math.round(oT/gT*1000)/10:0;
+      tc(cH,oT>0?oT:null,true,'FF1D4ED8');
+      const pcell=wsFecho.getCell(totRow,cP);
+      pcell.value=oT>0?pct:null;
+      pcell.font=exFont(true,10,'FF1D4ED8');
+      pcell.alignment=exAlign('center','middle');
+      pcell.fill=exFill('FFE8F0FE'); pcell.border=bTot;
+      if(oT>0) pcell.numFmt='0.0"%"';
+    });
+    wsFecho.getRow(totRow).height=22;
+  }
+  // ── FIM FOLHA DE FECHO ──────────────────────────────────────────────────────
 
   // Write and download
   showToast('A gerar ficheiro...');
