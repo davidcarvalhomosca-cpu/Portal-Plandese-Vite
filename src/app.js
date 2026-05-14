@@ -855,6 +855,7 @@ async function exportMensal(){
 
   const colabsAtivos=[...COLABORADORES].filter(c=>c.ativo).sort((a,b)=>a.n-b.n);
   const summaryData=[]; // acumula dados para Folha de Fecho
+  const wsFecho=workbook.addWorksheet('Folha de Fecho'); // primeira aba do workbook
 
   // Colors (exact from original)
   const CC_C='FF0000FF', H_C='FF00B050', TOT_C='FF002060', NORM_C='FFFF00FF', EXTRA_C='FF993300';
@@ -1026,8 +1027,6 @@ async function exportMensal(){
 
   // ── FOLHA DE FECHO ──────────────────────────────────────────────────────────
   try {
-    const wsFecho=workbook.addWorksheet('Folha de Fecho');
-
     // Ordenar obras pelo nome
     const allObraIds=[...new Set(summaryData.flatMap(w=>Object.keys(w.obraHoras)))].sort(
       (a,b)=>(OBRAS.find(o=>o.id===a)?.nome||'').localeCompare(OBRAS.find(o=>o.id===b)?.nome||'')
