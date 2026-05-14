@@ -2093,6 +2093,9 @@ function exportFaturasXLSX(){
 //          notas, local, localLat, localLng, emailNotif, criadoPor, criadoNome, criadoEm}
 let COMPRAS = [];
 let _cmpSeq = 1;
+let _cmpArtigosEdit = []; // artigos selecionados no modal corrente
+let _cmpFornsEdit   = []; // fornecedores selecionados no modal corrente
+let _artPickerItems = []; // itens filtrados visíveis no picker
 
 // ── Supabase ────────────────────────────────────────────────────
 async function sbLoadCompras() {
@@ -2101,22 +2104,27 @@ async function sbLoadCompras() {
     if (error) throw error;
     if (data) {
       COMPRAS = data.map(r => ({
-        id:          r.id,
-        titulo:      r.titulo || r.artigo || '',
-        descricao:   r.descricao || '',
-        obraId:      r.obra_id || '',
-        fornecedor:  r.fornecedor || '',
-        urgencia:    r.urgencia || 'Normal',
-        estado:      r.estado || 'pendente',
-        dataLimite:  r.data_limite || '',
-        notas:       r.notas || '',
-        local:       r.local || '',
-        localLat:    r.local_lat || null,
-        localLng:    r.local_lng || null,
-        emailNotif:  r.email_notif || '',
-        criadoPor:   r.criado_por || '',
-        criadoNome:  r.criado_nome || r.criado_por || '',
-        criadoEm:    r.created_at ? r.created_at.slice(0,10) : fmt(new Date())
+        id:               r.id,
+        titulo:           r.titulo || r.artigo || '',
+        artigos:          Array.isArray(r.artigos) ? r.artigos : [],
+        obraId:           r.obra_id || '',
+        fornecedor:       r.fornecedor || '',
+        fornecedores:     Array.isArray(r.fornecedores) ? r.fornecedores : (r.fornecedor ? [r.fornecedor] : []),
+        urgencia:         r.urgencia || 'Normal',
+        estado:           r.estado || 'pendente',
+        dataLimite:       r.data_limite || '',
+        notas:            r.notas || '',
+        local:            r.local || '',
+        localLat:         r.local_lat || null,
+        localLng:         r.local_lng || null,
+        emailNotif:       r.email_notif || '',
+        pedidoCotacao:    !!r.pedido_cotacao,
+        aprovadoDO:       !!r.aprovado_do,
+        adjudicado:       !!r.adjudicado,
+        dataFornecimento: r.data_fornecimento || '',
+        criadoPor:        r.criado_por || '',
+        criadoNome:       r.criado_nome || r.criado_por || '',
+        criadoEm:         r.created_at ? r.created_at.slice(0,10) : fmt(new Date())
       }));
     }
   } catch(e) { console.warn('Erro ao carregar compras:', e); }
@@ -2125,20 +2133,25 @@ async function sbLoadCompras() {
 async function sbSaveCompra(c) {
   try {
     const rec = {
-      titulo:      c.titulo,
-      descricao:   c.descricao   || null,
-      obra_id:     c.obraId      || null,
-      fornecedor:  c.fornecedor  || null,
-      urgencia:    c.urgencia,
-      estado:      c.estado,
-      data_limite: c.dataLimite  || null,
-      notas:       c.notas       || null,
-      local:       c.local       || null,
-      local_lat:   c.localLat    || null,
-      local_lng:   c.localLng    || null,
-      email_notif: c.emailNotif  || null,
-      criado_por:  c.criadoPor   || null,
-      criado_nome: c.criadoNome  || null
+      titulo:             c.titulo,
+      artigos:            Array.isArray(c.artigos) ? c.artigos : [],
+      obra_id:            c.obraId           || null,
+      fornecedor:         c.fornecedor       || null,
+      fornecedores:       Array.isArray(c.fornecedores) ? c.fornecedores : [],
+      urgencia:           c.urgencia,
+      estado:             c.estado,
+      data_limite:        c.dataLimite       || null,
+      notas:              c.notas            || null,
+      local:              c.local            || null,
+      local_lat:          c.localLat         || null,
+      local_lng:          c.localLng         || null,
+      email_notif:        c.emailNotif       || null,
+      pedido_cotacao:     !!c.pedidoCotacao,
+      aprovado_do:        !!c.aprovadoDO,
+      adjudicado:         !!c.adjudicado,
+      data_fornecimento:  c.dataFornecimento || null,
+      criado_por:         c.criadoPor        || null,
+      criado_nome:        c.criadoNome       || null
     };
     if (c.id && typeof c.id === 'string' && c.id.includes('-')) {
       const {error} = await sb.from('pedidos_compra').update(rec).eq('id', c.id);
@@ -2198,6 +2211,19 @@ function cmpEstadoBadge(e) {
   };
   const m = map[e] || {cls:'b-gray', label: e};
   return `<span class="badge ${m.cls}">${m.label}</span>`;
+}
+function cmpFornDisplay(c) {
+  const fns = Array.isArray(c.fornecedores) && c.fornecedores.length ? c.fornecedores : (c.fornecedor ? [c.fornecedor] : []);
+  if (!fns.length) return '—';
+  if (fns.length === 1) return `<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:170px" title="${fns[0]}">${fns[0]}</span>`;
+  return `<span title="${fns.join(', ')}" style="cursor:default">${fns[0]} <span style="color:var(--gray-400);font-size:11px">+${fns.length-1}</span></span>`;
+}
+function cmpWorkflowBadges(c) {
+  let s = '';
+  if (c.pedidoCotacao) s += '<span style="display:inline-block;margin-top:3px;margin-right:3px;background:var(--blue-50);color:var(--blue-700);border:1px solid var(--blue-200);border-radius:4px;padding:1px 5px;font-size:10px;white-space:nowrap">Cotação</span>';
+  if (c.aprovadoDO)    s += '<span style="display:inline-block;margin-top:3px;margin-right:3px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:4px;padding:1px 5px;font-size:10px;white-space:nowrap">Aprov. DO</span>';
+  if (c.adjudicado)    s += '<span style="display:inline-block;margin-top:3px;background:#faf5ff;color:#6b21a8;border:1px solid #e9d5ff;border-radius:4px;padding:1px 5px;font-size:10px;white-space:nowrap">Adjudicado</span>';
+  return s ? `<div style="margin-top:3px">${s}</div>` : '';
 }
 function dataLimiteBadge(dl, estado) {
   if (!dl || estado === 'entregue') return '<span class="dl-none">—</span>';
@@ -2289,9 +2315,9 @@ function renderCompras() {
           <strong style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.titulo}</strong>
           ${c.local ? `<div style="display:flex;align-items:center;gap:4px">${mapIco || `<span style="font-size:11px;color:var(--gray-400)">${c.local}</span>`}</div>` : ''}
         </td>
-        <td style="color:var(--gray-600)">${c.fornecedor||'—'}</td>
+        <td style="color:var(--gray-600);max-width:180px">${cmpFornDisplay(c)}</td>
         <td>${urgBadge(c.urgencia)}</td>
-        <td>${cmpEstadoBadge(c.estado)}</td>
+        <td>${cmpEstadoBadge(c.estado)}${cmpWorkflowBadges(c)}</td>
         <td>${dataLimiteBadge(c.dataLimite, c.estado)}</td>
         <td style="font-size:12px;color:var(--gray-700);white-space:nowrap">${autorNome}${emailIco}</td>
         <td><button class="btn btn-secondary btn-sm" onclick="editarCompra('${c.id}')">Editar</button></td>
@@ -2418,26 +2444,168 @@ function limparLocalizacao() {
 }
 
 // ── CRUD ─────────────────────────────────────────────────────────
+// ── Artigos picker ───────────────────────────────────────────────
+function cmpInitArtPicker() {
+  const sel = document.getElementById('mcmp-cat');
+  if (!sel || sel.options.length > 1) return; // already populated
+  const cat = window.ARTIGOS_CATALOGO;
+  if (!cat) return;
+  Object.entries(cat).forEach(([key, val]) => {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = val.label;
+    sel.appendChild(opt);
+  });
+}
+
+function cmpRenderArtPicker() {
+  const cat   = document.getElementById('mcmp-cat')?.value || '';
+  const q     = (document.getElementById('mcmp-art-srch')?.value || '').toLowerCase().trim();
+  const list  = document.getElementById('mcmp-art-list');
+  if (!list) return;
+  const catalogo = window.ARTIGOS_CATALOGO;
+  if (!catalogo) { list.innerHTML = '<div style="padding:10px 12px;color:var(--gray-400);font-size:12px">Catálogo não carregado</div>'; return; }
+
+  let items = [];
+  if (cat && catalogo[cat]) {
+    items = catalogo[cat].items;
+  } else {
+    Object.values(catalogo).forEach(c => { items = items.concat(c.items); });
+  }
+  if (q) {
+    items = items.filter(([ref, nome]) =>
+      nome.toLowerCase().includes(q) || (ref && ref.toLowerCase().includes(q))
+    );
+  }
+  _artPickerItems = items;
+
+  if (items.length === 0) {
+    list.innerHTML = '<div style="padding:10px 12px;color:var(--gray-400);font-size:12px">Nenhum artigo encontrado</div>';
+    return;
+  }
+
+  const shown = items.slice(0, 60);
+  list.innerHTML = shown.map((item, i) =>
+    `<div onclick="cmpAddArtigo(${i})" style="padding:7px 12px;cursor:pointer;border-bottom:1px solid var(--gray-200);font-size:12px;display:flex;justify-content:space-between;align-items:center;gap:8px" onmouseover="this.style.background='var(--blue-50)'" onmouseout="this.style.background=''">`+
+    `<span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${item[1].replace(/"/g,'&quot;')}">${item[1]}</span>`+
+    `<span style="flex-shrink:0;font-size:11px;color:var(--gray-400)">${item[2]}</span>`+
+    `</div>`
+  ).join('') + (items.length > 60
+    ? `<div style="padding:6px 12px;color:var(--gray-400);font-size:11px;font-style:italic">+${items.length-60} itens — refine a pesquisa para ver mais</div>`
+    : '');
+}
+
+function cmpAddArtigo(idx) {
+  const item = _artPickerItems[idx];
+  if (!item) return;
+  const [ref, nome, un] = item;
+  const exists = _cmpArtigosEdit.find(a => a.ref === ref && a.nome === nome);
+  if (exists) { exists.qty += 1; cmpRenderArtigosSelected(); return; }
+  _cmpArtigosEdit.push({ ref, nome, un, qty: 1 });
+  cmpRenderArtigosSelected();
+}
+
+function cmpRemoveArtigo(i) {
+  _cmpArtigosEdit.splice(i, 1);
+  cmpRenderArtigosSelected();
+}
+
+function cmpUpdateArtigoQty(i, val) {
+  if (_cmpArtigosEdit[i]) _cmpArtigosEdit[i].qty = parseFloat(val) || 0;
+}
+
+function cmpRenderArtigosSelected() {
+  const el = document.getElementById('mcmp-art-selected');
+  if (!el) return;
+  if (_cmpArtigosEdit.length === 0) {
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = '';
+  el.innerHTML =
+    `<table style="width:100%;border-collapse:collapse;font-size:12px">`+
+    `<thead><tr style="background:var(--gray-100);">`+
+    `<th style="padding:6px 10px;text-align:left;color:var(--gray-600);font-weight:600">Referência</th>`+
+    `<th style="padding:6px 10px;text-align:left;color:var(--gray-600);font-weight:600">Artigo</th>`+
+    `<th style="padding:6px 10px;text-align:center;color:var(--gray-600);font-weight:600;width:50px">Un.</th>`+
+    `<th style="padding:6px 10px;text-align:center;color:var(--gray-600);font-weight:600;width:90px">Qtd.</th>`+
+    `<th style="width:32px"></th></tr></thead><tbody>`+
+    _cmpArtigosEdit.map((a, i) =>
+      `<tr style="border-bottom:1px solid var(--gray-200)">`+
+      `<td style="padding:5px 10px;color:var(--gray-500);font-size:11px">${a.ref||'—'}</td>`+
+      `<td style="padding:5px 10px">${a.nome}</td>`+
+      `<td style="padding:5px 10px;text-align:center;color:var(--gray-600)">${a.un}</td>`+
+      `<td style="padding:4px 10px;text-align:center"><input type="number" min="0" step="any" value="${a.qty}" onchange="cmpUpdateArtigoQty(${i},this.value)" style="width:72px;text-align:center;border:1.5px solid var(--gray-200);border-radius:6px;padding:3px 6px;font-size:13px;font-family:inherit"/></td>`+
+      `<td style="padding:4px 6px;text-align:center"><button onclick="cmpRemoveArtigo(${i})" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:15px;line-height:1;padding:2px 4px" title="Remover">✕</button></td>`+
+      `</tr>`
+    ).join('')+
+    `</tbody></table>`;
+}
+
+// ── Fornecedores chips ────────────────────────────────────────────
+function cmpAddForn() {
+  const inp = document.getElementById('mcmp-forn-input');
+  if (!inp) return;
+  const val = inp.value.trim();
+  if (!val) return;
+  if (!_cmpFornsEdit.includes(val)) {
+    _cmpFornsEdit.push(val);
+    cmpRenderFornChips();
+  }
+  inp.value = '';
+}
+
+function cmpRemoveForn(i) {
+  _cmpFornsEdit.splice(i, 1);
+  cmpRenderFornChips();
+}
+
+function cmpRenderFornChips() {
+  const el = document.getElementById('mcmp-forn-chips');
+  if (!el) return;
+  el.innerHTML = _cmpFornsEdit.length === 0
+    ? '<span style="color:var(--gray-400);font-size:12px">Nenhum fornecedor adicionado</span>'
+    : _cmpFornsEdit.map((f, i) =>
+        `<span style="display:inline-flex;align-items:center;gap:5px;background:var(--blue-50);color:var(--blue-700);border:1px solid var(--blue-200);border-radius:20px;padding:3px 10px;font-size:12px;font-weight:500">`+
+        `${f}<button onclick="cmpRemoveForn(${i})" style="background:none;border:none;cursor:pointer;color:var(--blue-400);font-size:13px;line-height:1;padding:0 0 0 2px;display:inline-flex;align-items:center" title="Remover">✕</button>`+
+        `</span>`
+      ).join('');
+}
+
 function openCompraModal(c) {
   populaCmpObras();
+  cmpInitArtPicker();
   // Limpar estado do mapa picker
   _mapaCoords = c?.localLat ? {lat:c.localLat, lng:c.localLng, addr:c.local} : null;
   document.getElementById('mcmp-title').textContent       = c ? 'Editar pedido' : 'Novo pedido de compra';
   document.getElementById('mcmp-sub').textContent         = c ? `Criado por ${c.criadoNome||c.criadoPor} em ${c.criadoEm}` : 'Preencha os campos do pedido';
   document.getElementById('mcmp-id').value                = c ? c.id : '';
   document.getElementById('mcmp-titulo').value            = c ? c.titulo : '';
-  document.getElementById('mcmp-descricao').value         = c ? c.descricao : '';
   document.getElementById('mcmp-obra').value              = c ? (c.obraId||'') : '';
-  document.getElementById('mcmp-local').value             = c ? c.local : '';
+  document.getElementById('mcmp-local').value             = c ? (c.local||'') : '';
   document.getElementById('mcmp-lat').value               = c?.localLat || '';
   document.getElementById('mcmp-lng').value               = c?.localLng || '';
-  document.getElementById('mcmp-forn').value              = c ? c.fornecedor : '';
   document.getElementById('mcmp-urg').value               = c ? c.urgencia : 'Normal';
   document.getElementById('mcmp-estado').value            = c ? c.estado : 'pendente';
   document.getElementById('mcmp-data-limite').value       = c ? (c.dataLimite||'') : '';
-  document.getElementById('mcmp-notas').value             = c ? c.notas : '';
-  document.getElementById('mcmp-email').value             = c ? c.emailNotif : '';
+  document.getElementById('mcmp-notas').value             = c ? (c.notas||'') : '';
+  document.getElementById('mcmp-email').value             = c ? (c.emailNotif||'') : '';
   document.getElementById('mcmp-del-btn').style.display   = c ? '' : 'none';
+  // Workflow checkboxes
+  document.getElementById('mcmp-cotacao').checked         = c ? !!c.pedidoCotacao : false;
+  document.getElementById('mcmp-aprov-do').checked        = c ? !!c.aprovadoDO    : false;
+  document.getElementById('mcmp-adjud').checked           = c ? !!c.adjudicado    : false;
+  document.getElementById('mcmp-data-forn').value         = c ? (c.dataFornecimento||'') : '';
+  // Artigos
+  _cmpArtigosEdit = c && Array.isArray(c.artigos) ? JSON.parse(JSON.stringify(c.artigos)) : [];
+  document.getElementById('mcmp-cat').value = '';
+  document.getElementById('mcmp-art-srch').value = '';
+  cmpRenderArtPicker();
+  cmpRenderArtigosSelected();
+  // Fornecedores
+  _cmpFornsEdit = c && Array.isArray(c.fornecedores) ? [...c.fornecedores] : (c?.fornecedor ? [c.fornecedor] : []);
+  document.getElementById('mcmp-forn-input').value = '';
+  cmpRenderFornChips();
   // Preview de localização
   const prev = document.getElementById('loc-preview-line');
   const txt  = document.getElementById('loc-preview-txt');
@@ -2460,37 +2628,54 @@ async function saveCompra() {
   const localAddr = document.getElementById('mcmp-local').value.trim();
   const localLat  = parseFloat(document.getElementById('mcmp-lat').value) || null;
   const localLng  = parseFloat(document.getElementById('mcmp-lng').value) || null;
+  const artigos   = JSON.parse(JSON.stringify(_cmpArtigosEdit));
+  const fornecedores = [..._cmpFornsEdit];
+  const fornecedor   = fornecedores[0] || '';
+  const pedidoCotacao = document.getElementById('mcmp-cotacao').checked;
+  const aprovadoDO    = document.getElementById('mcmp-aprov-do').checked;
+  const adjudicado    = document.getElementById('mcmp-adjud').checked;
+  const dataFornecimento = document.getElementById('mcmp-data-forn').value || null;
   if (c) {
-    c.titulo      = titulo;
-    c.descricao   = document.getElementById('mcmp-descricao').value;
-    c.obraId      = document.getElementById('mcmp-obra').value;
-    c.local       = localAddr;
-    c.localLat    = localLat;
-    c.localLng    = localLng;
-    c.fornecedor  = document.getElementById('mcmp-forn').value.trim();
-    c.urgencia    = document.getElementById('mcmp-urg').value;
-    c.estado      = document.getElementById('mcmp-estado').value;
-    c.dataLimite  = document.getElementById('mcmp-data-limite').value;
-    c.notas       = document.getElementById('mcmp-notas').value;
-    c.emailNotif  = document.getElementById('mcmp-email').value.trim();
+    c.titulo           = titulo;
+    c.artigos          = artigos;
+    c.obraId           = document.getElementById('mcmp-obra').value;
+    c.local            = localAddr;
+    c.localLat         = localLat;
+    c.localLng         = localLng;
+    c.fornecedor       = fornecedor;
+    c.fornecedores     = fornecedores;
+    c.urgencia         = document.getElementById('mcmp-urg').value;
+    c.estado           = document.getElementById('mcmp-estado').value;
+    c.dataLimite       = document.getElementById('mcmp-data-limite').value;
+    c.notas            = document.getElementById('mcmp-notas').value;
+    c.emailNotif       = document.getElementById('mcmp-email').value.trim();
+    c.pedidoCotacao    = pedidoCotacao;
+    c.aprovadoDO       = aprovadoDO;
+    c.adjudicado       = adjudicado;
+    c.dataFornecimento = dataFornecimento;
   } else {
     c = {
-      id:          'local_' + (_cmpSeq++),
+      id:               'local_' + (_cmpSeq++),
       titulo,
-      descricao:   document.getElementById('mcmp-descricao').value,
-      obraId:      document.getElementById('mcmp-obra').value,
-      local:       localAddr,
+      artigos,
+      obraId:           document.getElementById('mcmp-obra').value,
+      local:            localAddr,
       localLat,
       localLng,
-      fornecedor:  document.getElementById('mcmp-forn').value.trim(),
-      urgencia:    document.getElementById('mcmp-urg').value,
-      estado:      document.getElementById('mcmp-estado').value,
-      dataLimite:  document.getElementById('mcmp-data-limite').value,
-      notas:       document.getElementById('mcmp-notas').value,
-      emailNotif:  document.getElementById('mcmp-email').value.trim(),
-      criadoPor:   currentUser?.key  || '',
-      criadoNome:  currentUser?.nome || '',
-      criadoEm:    fmt(new Date())
+      fornecedor,
+      fornecedores,
+      urgencia:         document.getElementById('mcmp-urg').value,
+      estado:           document.getElementById('mcmp-estado').value,
+      dataLimite:       document.getElementById('mcmp-data-limite').value,
+      notas:            document.getElementById('mcmp-notas').value,
+      emailNotif:       document.getElementById('mcmp-email').value.trim(),
+      pedidoCotacao,
+      aprovadoDO,
+      adjudicado,
+      dataFornecimento,
+      criadoPor:        currentUser?.key  || '',
+      criadoNome:       currentUser?.nome || '',
+      criadoEm:         fmt(new Date())
     };
     COMPRAS.unshift(c);
   }
@@ -2519,13 +2704,21 @@ function exportComprasXLSX() {
   if (COMPRAS.length === 0) { showToast('Sem pedidos para exportar'); return; }
   const dados = COMPRAS.map(c => {
     const obraNome = OBRAS.find(o=>o.id===c.obraId)?.nome||'';
+    const artigosStr = (c.artigos||[]).map(a=>`${a.nome} (${a.qty} ${a.un})`).join('; ');
+    const fornsStr   = (c.fornecedores||[c.fornecedor]).filter(Boolean).join('; ');
     return {
-      'Título': c.titulo, 'Descrição': c.descricao||'',
+      'Título': c.titulo,
+      'Artigos': artigosStr,
       'Obra': obraNome,
       'Localização': c.local||'',
-      'Lat': c.localLat||'', 'Lng': c.localLng||'',
-      'Fornecedor': c.fornecedor||'', 'Urgência': c.urgencia,
-      'Estado': c.estado, 'Data limite': c.dataLimite||'',
+      'Fornecedores': fornsStr,
+      'Urgência': c.urgencia,
+      'Estado': c.estado,
+      'Data limite': c.dataLimite||'',
+      'Pedido cotação': c.pedidoCotacao ? 'Sim' : '',
+      'Aprovado DO': c.aprovadoDO ? 'Sim' : '',
+      'Adjudicado': c.adjudicado ? 'Sim' : '',
+      'Data fornecimento': c.dataFornecimento||'',
       'Criado por': c.criadoNome||c.criadoPor||'',
       'Data criação': c.criadoEm||'', 'Email notif.': c.emailNotif||'',
       'Notas': c.notas||''
@@ -6336,6 +6529,8 @@ Object.assign(window, {
   renderCompras, editarCompra, saveCompra, apagarCompra,
   exportComprasXLSX, abrirMapaPicker, fecharMapaPicker,
   geocodeSearch, confirmarLocalizacao, limparLocalizacao,
+  cmpRenderArtPicker, cmpAddArtigo, cmpRemoveArtigo, cmpUpdateArtigoQty,
+  cmpAddForn, cmpRemoveForn,
 
   // Empresas MOA
   saveEmpresaMOA, editEmpresaMOA, toggleEmpresaMOA,
@@ -6580,7 +6775,7 @@ function exportFornecedoresXLSX() {
 
 // Sincronizar ID do fornecedor selecionado no campo datalist do modal de compra
 document.addEventListener('input', e => {
-  if (e.target.id === 'mcmp-forn') {
+  if (e.target.id === 'mcmp-forn-input') {
     const nome = e.target.value;
     const forn = FORNECEDORES.find(f => f.nome === nome);
     const hiddenId = document.getElementById('mcmp-forn-id');

@@ -2209,23 +2209,45 @@
 
 <!-- MODAL PEDIDO DE COMPRA -->
 <div class="modal-bg" id="modal-compra">
-  <div class="modal" style="width:560px">
+  <div class="modal" style="width:780px;max-width:98vw">
     <div class="modal-title" id="mcmp-title">Novo pedido de compra</div>
     <div class="modal-sub" id="mcmp-sub">Preencha os campos do pedido</div>
     <input type="hidden" id="mcmp-id"/>
 
     <div class="field"><label>Título do pedido *</label><input type="text" id="mcmp-titulo" placeholder="Ex: Fornecimento de cimento e areia para Obra Norte"/></div>
 
-    <div class="field"><label>Descrição do pedido</label>
-      <textarea id="mcmp-descricao" style="resize:vertical;min-height:90px;width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px" placeholder="Detalhe os materiais, quantidades, especificações técnicas, condições de entrega..."></textarea>
-    </div>
-
     <div class="field"><label>Obra</label>
-      <select id="mcmp-obra">
-        <option value="">— Sem obra associada —</option>
-      </select>
+      <select id="mcmp-obra"><option value="">— Sem obra associada —</option></select>
     </div>
 
+    <!-- ARTIGOS -->
+    <div class="field">
+      <label>Artigos do pedido</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <select id="mcmp-cat" onchange="cmpRenderArtPicker()" style="flex:0 0 210px;border:1.5px solid var(--gray-200);border-radius:8px;padding:7px 10px;font-size:13px;color:var(--gray-800);background:white">
+          <option value="">— Todas as categorias —</option>
+        </select>
+        <input type="text" id="mcmp-art-srch" placeholder="Pesquisar artigo pelo nome ou referência..." oninput="cmpRenderArtPicker()" style="flex:1;border:1.5px solid var(--gray-200);border-radius:8px;padding:7px 10px;font-size:13px"/>
+      </div>
+      <div id="mcmp-art-list" style="max-height:150px;overflow-y:auto;border:1.5px solid var(--gray-200);border-radius:8px;background:var(--gray-50)">
+        <div style="padding:10px 12px;color:var(--gray-400);font-size:12px">Selecione uma categoria ou pesquise para encontrar artigos</div>
+      </div>
+      <div id="mcmp-art-selected" style="margin-top:10px;border:1.5px solid var(--gray-200);border-radius:8px;overflow:hidden;display:none"></div>
+    </div>
+
+    <!-- FORNECEDORES -->
+    <div class="field">
+      <label>Fornecedores <span style="font-weight:400;color:var(--gray-400)">(pode adicionar vários)</span></label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="mcmp-forn-input" placeholder="Pesquise pelo nome do fornecedor…" list="mcmp-forn-list" autocomplete="off" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();cmpAddForn()}"/>
+        <datalist id="mcmp-forn-list"></datalist>
+        <input type="hidden" id="mcmp-forn-id"/>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="cmpAddForn()" style="white-space:nowrap;align-self:stretch">+ Adicionar</button>
+      </div>
+      <div id="mcmp-forn-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+    </div>
+
+    <!-- LOCALIZAÇÃO -->
     <div class="field">
       <label>Localização <span style="font-weight:400;color:var(--gray-400)">(opcional)</span></label>
       <div class="loc-picker">
@@ -2242,12 +2264,6 @@
       </div>
       <input type="hidden" id="mcmp-lat"/>
       <input type="hidden" id="mcmp-lng"/>
-    </div>
-
-    <div class="field"><label>Fornecedor preferencial <span style="font-weight:400;color:var(--gray-400)">(opcional)</span></label>
-      <input type="text" id="mcmp-forn" placeholder="Pesquise pelo nome do fornecedor…" list="mcmp-forn-list" autocomplete="off"/>
-      <datalist id="mcmp-forn-list"></datalist>
-      <input type="hidden" id="mcmp-forn-id"/>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
@@ -2268,6 +2284,26 @@
       </div>
       <div class="field"><label>Data limite entrega</label>
         <input type="date" id="mcmp-data-limite"/>
+      </div>
+    </div>
+
+    <!-- PROCESSO DE COMPRA / WORKFLOW -->
+    <div class="field">
+      <label>Processo de compra</label>
+      <div style="border:1.5px solid var(--gray-200);border-radius:8px;padding:12px 16px;background:var(--gray-50);display:grid;grid-template-columns:1fr 1fr;gap:10px 24px">
+        <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;font-weight:500;color:var(--gray-800);user-select:none">
+          <input type="checkbox" id="mcmp-cotacao" style="width:16px;height:16px;accent-color:var(--blue-500);cursor:pointer;flex-shrink:0"/> Pedido de cotação
+        </label>
+        <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;font-weight:500;color:var(--gray-800);user-select:none">
+          <input type="checkbox" id="mcmp-aprov-do" style="width:16px;height:16px;accent-color:var(--blue-500);cursor:pointer;flex-shrink:0"/> Aprovado pelo DO
+        </label>
+        <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;font-weight:500;color:var(--gray-800);user-select:none">
+          <input type="checkbox" id="mcmp-adjud" style="width:16px;height:16px;accent-color:var(--blue-500);cursor:pointer;flex-shrink:0"/> Adjudicado
+        </label>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:12px;font-weight:600;color:var(--gray-600)">Data de fornecimento</span>
+          <input type="date" id="mcmp-data-forn" style="border:1.5px solid var(--gray-200);border-radius:6px;padding:5px 8px;font-size:13px;background:white"/>
+        </div>
       </div>
     </div>
 
@@ -2588,6 +2624,7 @@
       Produção
     </button>
   </nav>
+    <script src="/artigos-data.js"></script>
     <script type="module" src="/src/main.js"></script>
 </body>
 </html>
