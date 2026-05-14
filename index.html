@@ -948,28 +948,6 @@
         <!-- Cabeçalho -->
         <div class="pg-hdr">
           <div><div class="pg-title">Folha de Ponto</div><div class="pg-sub">Histórico de registos por semana</div></div>
-          <!-- Botões de exportar — aparecem após pesquisa, consoante o tab ativo -->
-          <div id="export-btns-plandese" style="display:none;flex-direction:column;gap:8px;align-items:flex-end">
-            <button class="btn btn-green" onclick="exportHistSemana()">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-              1. Folha semanal por obra
-            </button>
-            <div style="display:flex;align-items:center;gap:8px">
-              <div>
-                <div style="font-size:10px;font-weight:600;color:var(--gray-500);margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px">Mês de vencimento</div>
-                <select id="mes-mensal-sel" style="padding:6px 10px;border:1px solid var(--gray-300);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px">
-                  <option value="1">Janeiro 2026</option><option value="2">Fevereiro 2026</option><option value="3">Março 2026</option>
-                  <option value="4">Abril 2026</option><option value="5">Maio 2026</option><option value="6">Junho 2026</option>
-                  <option value="7">Julho 2026</option><option value="8">Agosto 2026</option><option value="9">Setembro 2026</option>
-                  <option value="10">Outubro 2026</option><option value="11">Novembro 2026</option><option value="12">Dezembro 2026</option>
-                </select>
-              </div>
-              <button class="btn btn-primary" onclick="exportMensal()" style="align-self:flex-end">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-                2. Folha mensal individual
-              </button>
-            </div>
-          </div>
           <div id="export-btns-aluguer" style="display:none;align-items:flex-end">
             <button class="btn btn-green" onclick="exportMOAExcel()">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
