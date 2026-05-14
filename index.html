@@ -1950,6 +1950,78 @@
         </div>
       </section>
 
+      <!-- FOLHA DE FECHO -->
+      <section id="sec-fecho-mes" class="section">
+        <div class="pg-hdr">
+          <div>
+            <div class="pg-title">Folha de Fecho</div>
+            <div class="pg-sub">Resumo mensal de horas por trabalhador e centro de custo</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--gray-500);margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px">Per&#237;odo</div>
+              <select id="fecho-mes-sel" style="padding:6px 10px;border:1px solid var(--gray-300);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px" onchange="renderFechoMes()">
+                <option value="1">Janeiro 2026</option>
+                <option value="2">Fevereiro 2026</option>
+                <option value="3">Mar&#231;o 2026</option>
+                <option value="4">Abril 2026</option>
+                <option value="5" selected>Maio 2026</option>
+                <option value="6">Junho 2026</option>
+                <option value="7">Julho 2026</option>
+                <option value="8">Agosto 2026</option>
+                <option value="9">Setembro 2026</option>
+                <option value="10">Outubro 2026</option>
+                <option value="11">Novembro 2026</option>
+                <option value="12">Dezembro 2026</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="renderFechoMes()" style="align-self:flex-end">
+              <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+              Atualizar
+            </button>
+            <button class="btn btn-green" onclick="exportFechoMes()" style="align-self:flex-end">
+              <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+              Exportar Excel
+            </button>
+          </div>
+        </div>
+
+        <div id="fecho-periodo-info" style="font-size:12px;color:var(--gray-500);margin-bottom:14px;font-weight:500"></div>
+
+        <div class="card" style="padding:0;overflow:hidden;margin-bottom:20px">
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+              <thead>
+                <tr style="background:var(--gray-50);border-bottom:2px solid var(--gray-200)">
+                  <th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--gray-700);white-space:nowrap">N&#186;</th>
+                  <th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--gray-700)">Nome</th>
+                  <th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--gray-700)">Fun&#231;&#227;o</th>
+                  <th style="padding:10px 14px;text-align:right;font-weight:700;color:var(--gray-700);white-space:nowrap">H. Normais</th>
+                  <th style="padding:10px 14px;text-align:right;font-weight:700;color:var(--gray-700);white-space:nowrap">H. Extra</th>
+                  <th style="padding:10px 14px;text-align:right;font-weight:700;color:var(--gray-700);white-space:nowrap">Total</th>
+                  <th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--gray-700)">Distribui&#231;&#227;o por Obra</th>
+                </tr>
+              </thead>
+              <tbody id="fecho-tbody">
+                <tr><td colspan="7" style="padding:40px;text-align:center;color:var(--gray-400)">Selecione um m&#234;s e clique em Atualizar</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="fecho-totais" style="display:none">
+          <div class="card" style="padding:16px">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gray-500);margin-bottom:12px">Totais Globais</div>
+            <div style="display:flex;gap:24px;flex-wrap:wrap">
+              <div><span style="font-size:12px;color:var(--gray-500)">H. Normais:</span> <span id="fecho-tot-n" style="font-weight:700;color:var(--gray-900);font-family:'DM Mono',monospace">0h</span></div>
+              <div><span style="font-size:12px;color:var(--gray-500)">H. Extra:</span> <span id="fecho-tot-e" style="font-weight:700;color:var(--blue-500);font-family:'DM Mono',monospace">0h</span></div>
+              <div><span style="font-size:12px;color:var(--gray-500)">Total:</span> <span id="fecho-tot-t" style="font-weight:700;color:var(--green);font-family:'DM Mono',monospace">0h</span></div>
+              <div><span style="font-size:12px;color:var(--gray-500)">Trabalhadores:</span> <span id="fecho-tot-w" style="font-weight:700;color:var(--gray-900);font-family:'DM Mono',monospace">0</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </div>
   </div>
 </div>
@@ -2390,79 +2462,7 @@
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-auto')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveAuto()">Guardar</button>
-      <!-- FOLHA DE FECHO -->
-      <section id="sec-fecho-mes" class="section">
-        <div class="pg-hdr">
-          <div>
-            <div class="pg-title">Folha de Fecho</div>
-            <div class="pg-sub">Resumo mensal de horas por trabalhador e centro de custo</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px">
-            <div>
-              <div style="font-size:10px;font-weight:600;color:var(--gray-500);margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px">Período</div>
-              <select id="fecho-mes-sel" style="padding:6px 10px;border:1px solid var(--gray-300);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px" onchange="renderFechoMes()">
-                <option value="1">Janeiro 2026</option>
-                <option value="2">Fevereiro 2026</option>
-                <option value="3">Março 2026</option>
-                <option value="4">Abril 2026</option>
-                <option value="5" selected>Maio 2026</option>
-                <option value="6">Junho 2026</option>
-                <option value="7">Julho 2026</option>
-                <option value="8">Agosto 2026</option>
-                <option value="9">Setembro 2026</option>
-                <option value="10">Outubro 2026</option>
-                <option value="11">Novembro 2026</option>
-                <option value="12">Dezembro 2026</option>
-              </select>
-            </div>
-            <button class="btn btn-primary" onclick="renderFechoMes()" style="align-self:flex-end">
-              <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-              Atualizar
-            </button>
-            <button class="btn btn-green" onclick="exportFechoMes()" style="align-self:flex-end">
-              <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-              Exportar Excel
-            </button>
-          </div>
-        </div>
-
-        <div id="fecho-periodo-info" style="font-size:12px;color:var(--gray-500);margin-bottom:14px;font-weight:500"></div>
-
-        <div class="card" style="padding:0;overflow:hidden;margin-bottom:20px">
-          <div style="overflow-x:auto">
-            <table style="width:100%;border-collapse:collapse;font-size:13px">
-              <thead>
-                <tr style="background:var(--gray-50);border-bottom:2px solid var(--gray-200)">
-                  <th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--gray-700);white-space:nowrap">N&#186;</th>
-                  <th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--gray-700)">Nome</th>
-                  <th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--gray-700)">Fun&#231;&#227;o</th>
-                  <th style="padding:10px 14px;text-align:right;font-weight:700;color:var(--gray-700);white-space:nowrap">H. Normais</th>
-                  <th style="padding:10px 14px;text-align:right;font-weight:700;color:var(--gray-700);white-space:nowrap">H. Extra</th>
-                  <th style="padding:10px 14px;text-align:right;font-weight:700;color:var(--gray-700);white-space:nowrap">Total</th>
-                  <th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--gray-700)">Distribui&#231;&#227;o por Obra</th>
-                </tr>
-              </thead>
-              <tbody id="fecho-tbody">
-                <tr><td colspan="7" style="padding:40px;text-align:center;color:var(--gray-400)">Selecione um m&#234;s e clique em Atualizar</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div id="fecho-totais" style="display:none">
-          <div class="card" style="padding:16px">
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gray-500);margin-bottom:12px">Totais Globais</div>
-            <div style="display:flex;gap:24px;flex-wrap:wrap">
-              <div><span style="font-size:12px;color:var(--gray-500)">H. Normais:</span> <span id="fecho-tot-n" style="font-weight:700;color:var(--gray-900);font-family:'DM Mono',monospace">0h</span></div>
-              <div><span style="font-size:12px;color:var(--gray-500)">H. Extra:</span> <span id="fecho-tot-e" style="font-weight:700;color:var(--blue-500);font-family:'DM Mono',monospace">0h</span></div>
-              <div><span style="font-size:12px;color:var(--gray-500)">Total:</span> <span id="fecho-tot-t" style="font-weight:700;color:var(--green);font-family:'DM Mono',monospace">0h</span></div>
-              <div><span style="font-size:12px;color:var(--gray-500)">Trabalhadores:</span> <span id="fecho-tot-w" style="font-weight:700;color:var(--gray-900);font-family:'DM Mono',monospace">0</span></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-    </div>
+</div>
   </div>
 </div>
 
