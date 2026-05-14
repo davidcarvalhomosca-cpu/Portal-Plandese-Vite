@@ -1025,7 +1025,7 @@ async function exportMensal(){
   }
 
   // ── FOLHA DE FECHO ──────────────────────────────────────────────────────────
-  {
+  try {
     const wsFecho=workbook.addWorksheet('Folha de Fecho');
 
     // Ordenar obras pelo nome
@@ -1109,13 +1109,13 @@ async function exportMensal(){
       const rowFg=idx%2===0?'FFFFFFFF':'FFF0F4FF';
       const bR=exBorder('thin','thin','thin','thin');
 
-      function wc(col,val,bold,argb,fg){
+      const wc=(col,val,bold,argb,fg)=>{
         const cell=wsFecho.getCell(row,col);
         cell.value=(val!==null&&val!==undefined&&val!=='')?val:null;
         cell.font=exFont(bold||false,10,argb||null);
         cell.alignment=exAlign(typeof val==='number'?'center':'left','middle');
         cell.fill=exFill(fg||rowFg); cell.border=bR;
-      }
+      };
       wc(1,w.n,false,'FF374151');
       wc(2,w.nome,true,'FF111827');
       wc(3,w.func,false,'FF6B7280');
@@ -1144,17 +1144,15 @@ async function exportMensal(){
     const gT=Math.round((gN+gE)*100)/100;
     const bTot=exBorder('medium','medium','medium','medium');
 
-    function tc(col,val,bold,argb){
+    const tc=(col,val,bold,argb)=>{
       const cell=wsFecho.getCell(totRow,col);
       cell.value=(val!==null&&val!==undefined)?val:null;
       cell.font=exFont(bold||false,10,argb||null);
       cell.alignment=exAlign(typeof val==='number'?'center':'left','middle');
       cell.fill=exFill('FFE8F0FE'); cell.border=bTot;
-    }
+    };
     wsFecho.mergeCells(totRow,1,totRow,3);
     tc(1,'TOTAL GERAL',true,'FF002060');
-    wsFecho.getCell(totRow,2).fill=exFill('FFE8F0FE'); wsFecho.getCell(totRow,2).border=bTot;
-    wsFecho.getCell(totRow,3).fill=exFill('FFE8F0FE'); wsFecho.getCell(totRow,3).border=bTot;
     tc(4,Math.round(gN*100)/100,true,'FF00B050');
     tc(5,Math.round(gE*100)/100,true,'FF993300');
     tc(6,gT,true,'FF002060');
@@ -1173,7 +1171,7 @@ async function exportMensal(){
       if(oT>0) pcell.numFmt='0.0"%"';
     });
     wsFecho.getRow(totRow).height=22;
-  }
+  } catch(eFecho) { console.warn('Folha de Fecho erro:', eFecho); }
   // ── FIM FOLHA DE FECHO ──────────────────────────────────────────────────────
 
   // Write and download
