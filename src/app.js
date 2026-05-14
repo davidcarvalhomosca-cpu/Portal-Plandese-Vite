@@ -6075,112 +6075,123 @@ async function renderFechoMes(){
   const ano = 2026;
 
   // Período: 22 do mês anterior → 21 do mês atual
-  const dataIni = new Date(ano, mesVal === 1 ? -1 : mesVal - 2, 22);
-  const dataFim = new Date(ano, mesVal - 1, 21);
+  // Usar hora 12:00 para evitar problemas de timezone (UTC vs UTC+1)
+  const dataIni = new Date(ano, mesVal === 1 ? -1 : mesVal - 2, 22, 12, 0, 0);
+  const dataFim = new Date(ano, mesVal - 1, 21, 12, 0, 0);
+
+  // Formatar datas para string YYYY-MM-DD sem desvio de timezone
+  const fmtLocal = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return y + '-' + m + '-' + day;
+  };
+
+  const dIniStr = fmtLocal(dataIni);
+  const dFimStr = fmtLocal(dataFim);
 
   // Atualiza info do período
   const infoEl = document.getElementById('fecho-periodo-info');
-  if(infoEl) infoEl.textContent = 'Período: ' + fmt(dataIni) + ' a ' + fmt(dataFim);
+  if(infoEl) infoEl.textContent = 'Período: ' + dIniStr.split('-').reverse().join('/') + ' a ' + dFimStr.split('-').reverse().join('/');
 
   const tbody = document.getElementById('fecho-tbody');
-  if(tbody) tbody.innerHTML = '<tr><td colspan="7" style="padding:40px;text-align:center;color:var(--gray-500)">A carregar dados\u2026</td></tr>';
+  if(tbody) tbody.innerHTML = '<tr><td colspan="7" style="padding:40px;text-align:center;color:var(--gray-500)">A carregar dados…</td></tr>';
 
-  // Buscar registos do período
-  const dIniStr = fmt(dataIni);
-  const dFimStr = fmt(dataFim);
-  const {data: regs, error} = await sb.from('registos_ponto').select('*').gte('data', dIniStr).lte('data', dFimStr);
-  if(error){
-    if(tbody) tbody.innerHTML = '<tr><td colspan="7" style="padding:32px;text-align:center;color:var(--red)">Erro ao carregar: ' + error.message + '</td></tr>';
-    return;
-  }
+  try {
+    const {data: regs, error} = await sb.from('registos_ponto').select('*').gte('data', dIniStr).lte('data', dFimStr);
+    if(error) throw new Error(error.message);
 
-  // Construir mapa: data → colabNumero → registo
-  const regMap = {};
-  (regs||[]).forEach(r => {
-    if(!regMap[r.data]) regMap[r.data] = {};
-    regMap[r.data][r.colab_numero] = r;
-  });
+    // Construir mapa: data → colabNumero → registo
+    const regMap = {};
+    (regs||[]).forEach(r => {
+      if(!regMap[r.data]) regMap[r.data] = {};
+      regMap[r.data][String(r.colab_numero)] = r;
+    });
 
-  // Gerar lista de datas do período
-  const datas = [];
-  for(let d = new Date(dataIni); d <= dataFim; d.setDate(d.getDate()+1)) datas.push(new Date(d));
-
-  // Calcular horas por colaborador
-  const colabsAtivos = [...COLABORADORES].filter(c => c.ativo).sort((a,b) => a.n - b.n);
-  const rows = [];
-
-  for(const colab of colabsAtivos){
-    const {n, nome, func} = colab;
-    let totN = 0, totE = 0;
-    const obraHoras = {};
-
-    for(const d of datas){
-      const dk = fmt(d);
-      const r = (regMap[dk]||{})[n];
-      if(!r) continue;
-      if(r.tipo === 'Folga') continue;
-      const h = calcH(r.entrada ? r.entrada.slice(0,5) : '', r.saida ? r.saida.slice(0,5) : '', d);
-      totN += h.n;
-      totE += h.e;
-      const oId = r.obra_id || '_sem_obra';
-      obraHoras[oId] = (obraHoras[oId]||0) + h.t;
+    // Gerar lista de datas do período usando fmtLocal
+    const datas = [];
+    for(let d = new Date(dataIni); fmtLocal(d) <= dFimStr; d.setDate(d.getDate()+1)){
+      datas.push(fmtLocal(new Date(d)));
     }
 
-    const totT = totN + totE;
-    if(totT === 0) continue;
-    rows.push({n, nome, func, totN, totE, totT, obraHoras});
-  }
+    // Calcular horas por colaborador
+    const colabsAtivos = [...COLABORADORES].filter(c => c.ativo).sort((a,b) => a.n - b.n);
+    const rows = [];
 
-  // Renderizar tabela
-  let globalN = 0, globalE = 0, globalT = 0;
-  if(!tbody) return;
+    for(const colab of colabsAtivos){
+      const {n, nome, func} = colab;
+      let totN = 0, totE = 0;
+      const obraHoras = {};
 
-  if(rows.length === 0){
-    tbody.innerHTML = '<tr><td colspan="7" style="padding:40px;text-align:center;color:var(--gray-400)">Sem registos para este per\u00edodo.</td></tr>';
+      for(const dk of datas){
+        const r = (regMap[dk]||{})[String(n)];
+        if(!r) continue;
+        if(r.tipo === 'Folga') continue;
+        const dateObj = new Date(dk + 'T12:00:00');
+        const h = calcH(r.entrada ? r.entrada.slice(0,5) : '', r.saida ? r.saida.slice(0,5) : '', dateObj);
+        totN += h.n;
+        totE += h.e;
+        const oId = r.obra_id || '_sem_obra';
+        obraHoras[oId] = (obraHoras[oId]||0) + h.t;
+      }
+
+      const totT = totN + totE;
+      if(totT === 0) continue;
+      rows.push({n, nome, func, totN, totE, totT, obraHoras});
+    }
+
+    if(!tbody) return;
+
+    if(rows.length === 0){
+      tbody.innerHTML = '<tr><td colspan="7" style="padding:40px;text-align:center;color:var(--gray-400)">Sem registos para este período (' + dIniStr + ' a ' + dFimStr + '). Total de registos carregados: ' + (regs||[]).length + '</td></tr>';
+      const totaisEl = document.getElementById('fecho-totais');
+      if(totaisEl) totaisEl.style.display = 'none';
+      return;
+    }
+
+    let globalN = 0, globalE = 0, globalT = 0;
+    const htmlRows = rows.map((row, i) => {
+      globalN += row.totN;
+      globalE += row.totE;
+      globalT += row.totT;
+
+      const obraEntries = Object.entries(row.obraHoras).sort((a,b) => b[1]-a[1]);
+      const obraBadges = obraEntries.map(([oId, horas]) => {
+        const pct = row.totT > 0 ? Math.round((horas / row.totT) * 100) : 0;
+        const obra = OBRAS.find(o => String(o.id) === String(oId));
+        const oNome = obra ? (obra.nome || obra.numero || oId) : (oId === '_sem_obra' ? 'Sem obra' : oId);
+        return '<span style="display:inline-flex;align-items:center;gap:4px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:2px 8px;font-size:11px;font-weight:600;color:#1d4ed8;white-space:nowrap;margin:2px 2px 2px 0">' + oNome + ' <span style="color:#6b7280">' + pct + '%</span></span>';
+      }).join('');
+
+      const bg = i % 2 === 0 ? '' : 'background:var(--gray-50)';
+      return '<tr style="' + bg + '">'
+        + '<td style="padding:10px 14px;color:var(--gray-500);font-family:monospace;font-size:12px">' + row.n + '</td>'
+        + '<td style="padding:10px 14px;font-weight:600;color:var(--gray-900)">' + row.nome + '</td>'
+        + '<td style="padding:10px 14px;color:var(--gray-600);font-size:12px">' + (row.func||'—') + '</td>'
+        + '<td style="padding:10px 14px;text-align:right;font-family:monospace;color:var(--gray-700)">' + fmtH(row.totN) + '</td>'
+        + '<td style="padding:10px 14px;text-align:right;font-family:monospace;color:#3b82f6">' + fmtH(row.totE) + '</td>'
+        + '<td style="padding:10px 14px;text-align:right;font-family:monospace;font-weight:700;color:var(--green)">' + fmtH(row.totT) + '</td>'
+        + '<td style="padding:10px 14px">' + (obraBadges || '<span style="color:var(--gray-300);font-size:12px">—</span>') + '</td>'
+        + '</tr>';
+    });
+    tbody.innerHTML = htmlRows.join('');
+
+    // Totais rodapé
     const totaisEl = document.getElementById('fecho-totais');
-    if(totaisEl) totaisEl.style.display = 'none';
-    return;
+    if(totaisEl){
+      totaisEl.style.display = '';
+      document.getElementById('fecho-tot-n').textContent = fmtH(globalN);
+      document.getElementById('fecho-tot-e').textContent = fmtH(globalE);
+      document.getElementById('fecho-tot-t').textContent = fmtH(globalT);
+      document.getElementById('fecho-tot-w').textContent = rows.length;
+    }
+
+    window._fechoMesData = {rows, mesVal, ano, dIniStr, dFimStr};
+
+  } catch(err) {
+    console.error('renderFechoMes error:', err);
+    if(tbody) tbody.innerHTML = '<tr><td colspan="7" style="padding:32px;text-align:center;color:var(--red)">Erro: ' + err.message + '</td></tr>';
   }
-
-  const htmlRows = rows.map((row, i) => {
-    globalN += row.totN;
-    globalE += row.totE;
-    globalT += row.totT;
-
-    // Distribuição por obra
-    const obraEntries = Object.entries(row.obraHoras).sort((a,b) => b[1]-a[1]);
-    const obraBadges = obraEntries.map(([oId, horas]) => {
-      const pct = row.totT > 0 ? Math.round((horas / row.totT) * 100) : 0;
-      const obra = OBRAS.find(o => o.id === oId);
-      const oNome = obra ? (obra.nome || obra.numero || oId) : (oId === '_sem_obra' ? 'Sem obra' : oId);
-      return '<span style="display:inline-flex;align-items:center;gap:4px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:2px 8px;font-size:11px;font-weight:600;color:#1d4ed8;white-space:nowrap;margin:2px 2px 2px 0">' + oNome + ' <span style="color:var(--gray-500)">' + pct + '%</span></span>';
-    }).join('');
-
-    const bg = i % 2 === 0 ? '' : 'background:var(--gray-50)';
-    return '<tr style="' + bg + '">'
-      + '<td style="padding:10px 14px;color:var(--gray-500);font-family:\'DM Mono\',monospace;font-size:12px">' + row.n + '</td>'
-      + '<td style="padding:10px 14px;font-weight:600;color:var(--gray-900)">' + row.nome + '</td>'
-      + '<td style="padding:10px 14px;color:var(--gray-600);font-size:12px">' + (row.func||'\u2014') + '</td>'
-      + '<td style="padding:10px 14px;text-align:right;font-family:\'DM Mono\',monospace;color:var(--gray-700)">' + fmtH(row.totN) + '</td>'
-      + '<td style="padding:10px 14px;text-align:right;font-family:\'DM Mono\',monospace;color:#3b82f6">' + fmtH(row.totE) + '</td>'
-      + '<td style="padding:10px 14px;text-align:right;font-family:\'DM Mono\',monospace;font-weight:700;color:var(--green)">' + fmtH(row.totT) + '</td>'
-      + '<td style="padding:10px 14px">' + (obraBadges||'<span style="color:var(--gray-300);font-size:12px">\u2014</span>') + '</td>'
-      + '</tr>';
-  });
-  tbody.innerHTML = htmlRows.join('');
-
-  // Totais rodapé
-  const totaisEl = document.getElementById('fecho-totais');
-  if(totaisEl){
-    totaisEl.style.display = '';
-    document.getElementById('fecho-tot-n').textContent = fmtH(globalN);
-    document.getElementById('fecho-tot-e').textContent = fmtH(globalE);
-    document.getElementById('fecho-tot-t').textContent = fmtH(globalT);
-    document.getElementById('fecho-tot-w').textContent = rows.length;
-  }
-
-  // Guardar dados para exportação Excel
-  window._fechoMesData = {rows, mesVal, ano, dIniStr, dFimStr};
 }
 
 async function exportFechoMes(){
