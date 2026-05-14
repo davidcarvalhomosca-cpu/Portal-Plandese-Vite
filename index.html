@@ -93,7 +93,48 @@
           <div class="enc-mode-arrow"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg></div>
         </button>
 
+        <!-- Cartão: Pedido de Compras -->
+        <button class="enc-mode-card" onclick="encGoComprasChat()">
+          <div class="enc-mode-icon" style="background:linear-gradient(135deg,#15803d,#22c55e);color:white">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.1 17 7 17h11v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12L8.1 13h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 20 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div class="enc-mode-title">Pedido de Compras</div>
+            <div class="enc-mode-desc">Solicitar materiais com o assistente inteligente</div>
+          </div>
+          <div class="enc-mode-arrow"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg></div>
+        </button>
+
       </div>
+    </div>
+  </div>
+
+  <!-- ECRÃ: ASSISTENTE DE COMPRAS (CHAT) -->
+  <div id="enc-screen-compras-chat" style="display:none;flex:1;flex-direction:column;background:#f0f4f8;overflow:hidden">
+    <!-- Header -->
+    <div class="chat-header">
+      <button onclick="encVoltarHome()" class="chat-back-btn">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      </button>
+      <div class="chat-header-avatar">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:22px;height:22px;color:white"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.1 17 7 17h11v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12L8.1 13h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 20 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+      </div>
+      <div class="chat-header-info">
+        <div class="chat-header-title">Assistente de Compras</div>
+        <div class="chat-header-sub">Plandese · online</div>
+      </div>
+    </div>
+    <!-- Área de mensagens -->
+    <div id="chat-msgs" class="chat-msgs"></div>
+    <!-- Sugestões de materiais / botões rápidos -->
+    <div id="chat-suggestions" class="chat-suggestions"></div>
+    <!-- Barra de input -->
+    <div class="chat-input-bar">
+      <input type="text" id="chat-input" class="chat-input" placeholder="Escreve aqui..." autocomplete="off"
+        oninput="chatOnInput(this.value)" onkeypress="if(event.key==='Enter')chatSend()">
+      <button onclick="chatSend()" class="chat-send-btn">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:20px;height:20px"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
     </div>
   </div>
 
