@@ -5221,17 +5221,19 @@ window.addEventListener('resize', function(){
 
 // Todas as secções configuráveis e os seus rótulos
 const ALL_SECTIONS = [
-  {id:'painel',      label:'Painel Principal'},
-  {id:'historico',   label:'Folha de Ponto'},
-  {id:'semana',      label:'Fecho Semanal'},
-  {id:'compras',     label:'Pedidos de Compra'},
-  {id:'faturas',     label:'Faturas'},
-  {id:'equipamentos',label:'Equipamentos'},
-  {id:'producao',    label:'Controlo de Obras'},
-  {id:'obras',       label:'Gerir Obras'},
-  {id:'colaboradores',label:'Colaboradores'},
-  {id:'utilizadores',label:'Utilizadores'},
-  {id:'comercial',   label:'Comercial'},
+  {id:'painel',             label:'Painel Principal'},
+  {id:'historico',          label:'Folha de Ponto'},
+  {id:'semana',             label:'Fecho Semanal'},
+  {id:'compras',            label:'Pedidos de Compra'},
+  {id:'mapas-comparativos', label:'Mapas Comparativos'},
+  {id:'faturas',            label:'Faturas'},
+  {id:'equipamentos',       label:'Equipamentos'},
+  {id:'producao',           label:'Controlo de Obras'},
+  {id:'obras',              label:'Gerir Obras'},
+  {id:'colaboradores',      label:'Colaboradores'},
+  {id:'utilizadores',       label:'Utilizadores'},
+  {id:'fornecedores',       label:'Lista de Fornecedores'},
+  {id:'comercial',          label:'Comercial'},
 ];
 
 // Perfis que podem ser configurados (admin tem sempre tudo)
@@ -6395,4 +6397,691 @@ Object.assign(window, {
 
   // Folha de Fecho
   renderFechoMes, exportFechoMes,
+});;
+
+// ═══════════════════════════════════════════════════════════
+//  MÓDULO FORNECEDORES
+// ═══════════════════════════════════════════════════════════
+let FORNECEDORES = [];
+let _fornPage = 0;
+const FORN_PER_PAGE = 50;
+
+async function sbLoadFornecedores() {
+  try {
+    const { data, error } = await sb.from('fornecedores').select('*').order('nome');
+    if (error) throw error;
+    FORNECEDORES = data || [];
+    preencherDatalistFornecedores();
+  } catch(e) { console.warn('Erro ao carregar fornecedores:', e); }
+}
+
+function preencherDatalistFornecedores() {
+  ['mcmp-forn-list','mmc-forn-add-list'].forEach(dlId => {
+    const dl = document.getElementById(dlId);
+    if (!dl) return;
+    dl.innerHTML = FORNECEDORES
+      .filter(f => f.ativo)
+      .map(f => `<option value="${f.nome}" data-id="${f.id}">${f.nome}${f.nif ? ' — ' + f.nif : ''}${f.localidade ? ' (' + f.localidade + ')' : ''}</option>`)
+      .join('');
+  });
+}
+
+function filtrarFornecedores() {
+  const q = (document.getElementById('forn-f-search')?.value || '').toLowerCase();
+  const ativo = document.getElementById('forn-f-ativo')?.value;
+  return FORNECEDORES.filter(f => {
+    if (ativo === '1' && !f.ativo) return false;
+    if (ativo === '0' && f.ativo) return false;
+    if (q && !(`${f.nome} ${f.nif || ''} ${f.localidade || ''}`).toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+function renderFornecedores() {
+  const lista = filtrarFornecedores();
+  const tbody = document.getElementById('forn-tbody');
+  const empty = document.getElementById('forn-empty');
+  const pagDiv = document.getElementById('forn-pag');
+  if (!tbody) return;
+
+  const total = lista.length;
+  const totalPag = Math.ceil(total / FORN_PER_PAGE) || 1;
+  if (_fornPage >= totalPag) _fornPage = Math.max(0, totalPag - 1);
+  const slice = lista.slice(_fornPage * FORN_PER_PAGE, (_fornPage + 1) * FORN_PER_PAGE);
+
+  const kTotal = document.getElementById('forn-k-total');
+  const kAtivos = document.getElementById('forn-k-ativos');
+  if (kTotal) kTotal.textContent = FORNECEDORES.length;
+  if (kAtivos) kAtivos.textContent = FORNECEDORES.filter(f => f.ativo).length;
+
+  if (total === 0) {
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = '';
+    if (pagDiv) pagDiv.innerHTML = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  tbody.innerHTML = slice.map(f => `<tr>
+    <td><strong>${f.nome}</strong>${f.num_conta ? `<div style="font-size:11px;color:var(--gray-400)">${f.num_conta}</div>` : ''}</td>
+    <td>${f.nif || '—'}</td>
+    <td>${f.localidade || '—'}</td>
+    <td>${f.telefone || f.telemovel || '—'}</td>
+    <td>${f.email_compras || f.email || '—'}</td>
+    <td><span class="badge ${f.ativo ? 'b-green' : 'b-gray'}">${f.ativo ? 'Activo' : 'Inactivo'}</span></td>
+    <td><button class="btn btn-secondary btn-sm" onclick="editarFornecedor('${f.id}')">Editar</button></td>
+  </tr>`).join('');
+
+  if (pagDiv) {
+    if (totalPag <= 1) {
+      pagDiv.innerHTML = `<span style="color:var(--gray-400)">${total} fornecedores</span>`;
+    } else {
+      pagDiv.innerHTML = `
+        <button class="btn btn-secondary btn-sm" onclick="fornPag(-1)" ${_fornPage===0?'disabled':''}>&#8249; Anterior</button>
+        <span>Página ${_fornPage+1} de ${totalPag} &nbsp;&middot;&nbsp; ${total} fornecedores</span>
+        <button class="btn btn-secondary btn-sm" onclick="fornPag(1)" ${_fornPage>=totalPag-1?'disabled':''}>Próxima &#8250;</button>`;
+    }
+  }
+}
+
+function fornPag(delta) { _fornPage = Math.max(0, _fornPage + delta); renderFornecedores(); }
+
+function openModalFornecedor(id) {
+  const f = id ? FORNECEDORES.find(x => x.id === id) : null;
+  document.getElementById('mforn-title').textContent = f ? 'Editar Fornecedor' : 'Novo Fornecedor';
+  document.getElementById('mforn-sub').textContent = f ? `Conta: ${f.num_conta || '—'}` : 'Preencha os dados do fornecedor';
+  document.getElementById('mforn-id').value = f ? f.id : '';
+  document.getElementById('mforn-nome').value = f?.nome || '';
+  document.getElementById('mforn-nif').value = f?.nif || '';
+  document.getElementById('mforn-conta').value = f?.num_conta || '';
+  document.getElementById('mforn-codpostal').value = f?.cod_postal || '';
+  document.getElementById('mforn-localidade').value = f?.localidade || '';
+  document.getElementById('mforn-rua').value = f?.rua || '';
+  document.getElementById('mforn-telefone').value = f?.telefone || '';
+  document.getElementById('mforn-telemovel').value = f?.telemovel || '';
+  document.getElementById('mforn-email').value = f?.email || '';
+  document.getElementById('mforn-email-compras').value = f?.email_compras || '';
+  document.getElementById('mforn-email-comercial').value = f?.email_comercial || '';
+  document.getElementById('mforn-email-contab').value = f?.email_contabilidade || '';
+  document.getElementById('mforn-notas').value = f?.notas || '';
+  document.getElementById('mforn-ativo').value = f ? (f.ativo ? '1' : '0') : '1';
+  document.getElementById('mforn-del-btn').style.display = f ? '' : 'none';
+  openModal('modal-fornecedor');
+}
+
+function editarFornecedor(id) { openModalFornecedor(id); }
+
+async function saveFornecedor() {
+  const nome = document.getElementById('mforn-nome').value.trim();
+  if (!nome) { showToast('O nome do fornecedor é obrigatório'); return; }
+  const id = document.getElementById('mforn-id').value;
+  const rec = {
+    nome,
+    nif: document.getElementById('mforn-nif').value.trim() || null,
+    num_conta: document.getElementById('mforn-conta').value.trim() || null,
+    cod_postal: document.getElementById('mforn-codpostal').value.trim() || null,
+    localidade: document.getElementById('mforn-localidade').value.trim() || null,
+    rua: document.getElementById('mforn-rua').value.trim() || null,
+    telefone: document.getElementById('mforn-telefone').value.trim() || null,
+    telemovel: document.getElementById('mforn-telemovel').value.trim() || null,
+    email: document.getElementById('mforn-email').value.trim() || null,
+    email_compras: document.getElementById('mforn-email-compras').value.trim() || null,
+    email_comercial: document.getElementById('mforn-email-comercial').value.trim() || null,
+    email_contabilidade: document.getElementById('mforn-email-contab').value.trim() || null,
+    notas: document.getElementById('mforn-notas').value.trim() || null,
+    ativo: document.getElementById('mforn-ativo').value === '1'
+  };
+  try {
+    if (id) {
+      const { error } = await sb.from('fornecedores').update(rec).eq('id', id);
+      if (error) throw error;
+      const idx = FORNECEDORES.findIndex(f => f.id === id);
+      if (idx >= 0) FORNECEDORES[idx] = { ...FORNECEDORES[idx], ...rec };
+    } else {
+      const { data, error } = await sb.from('fornecedores').insert(rec).select().single();
+      if (error) throw error;
+      FORNECEDORES.push(data);
+      FORNECEDORES.sort((a,b) => a.nome.localeCompare(b.nome, 'pt'));
+    }
+    preencherDatalistFornecedores();
+    closeModal('modal-fornecedor');
+    const al = document.getElementById('forn-alert');
+    if (al) { al.style.display=''; setTimeout(() => al.style.display='none', 3000); }
+    renderFornecedores();
+  } catch(e) { showToast('Erro ao guardar: ' + (e.message||e)); }
+}
+
+async function apagarFornecedor() {
+  const id = document.getElementById('mforn-id').value;
+  if (!id) return;
+  if (!confirm('Apagar este fornecedor? Esta acção não pode ser revertida.')) return;
+  try {
+    await sb.from('fornecedores').delete().eq('id', id);
+    FORNECEDORES = FORNECEDORES.filter(f => f.id !== id);
+    preencherDatalistFornecedores();
+    closeModal('modal-fornecedor');
+    renderFornecedores();
+  } catch(e) { showToast('Erro ao apagar: ' + (e.message||e)); }
+}
+
+function exportFornecedoresXLSX() {
+  const rows = filtrarFornecedores().map(f => ({
+    'Nome': f.nome, 'NIF': f.nif||'', 'Nº Conta': f.num_conta||'',
+    'Cód. Postal': f.cod_postal||'', 'Localidade': f.localidade||'', 'Rua': f.rua||'',
+    'Telefone': f.telefone||'', 'Telemóvel': f.telemovel||'',
+    'Email': f.email||'', 'Email Compras': f.email_compras||'',
+    'Email Comercial': f.email_comercial||'', 'Estado': f.ativo?'Activo':'Inactivo'
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Fornecedores');
+  XLSX.writeFile(wb, 'Lista_Fornecedores.xlsx');
+}
+
+// Sincronizar ID do fornecedor selecionado no campo datalist do modal de compra
+document.addEventListener('input', e => {
+  if (e.target.id === 'mcmp-forn') {
+    const nome = e.target.value;
+    const forn = FORNECEDORES.find(f => f.nome === nome);
+    const hiddenId = document.getElementById('mcmp-forn-id');
+    if (hiddenId) hiddenId.value = forn ? forn.id : '';
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  MÓDULO MAPAS COMPARATIVOS
+// ═══════════════════════════════════════════════════════════
+let MAPAS_COMP = [];
+let _mcMapaAtual = null;
+let _mcFornecedores = [];
+let _mcLinhas = [];
+
+const MC_ESTADO_CFG = {
+  rascunho:   { cls:'b-gray',   label:'Rascunho' },
+  em_analise: { cls:'b-orange', label:'Em análise' },
+  aprovado:   { cls:'b-green',  label:'Aprovado' },
+  arquivado:  { cls:'b-gray',   label:'Arquivado' }
+};
+
+async function sbLoadMapasComp() {
+  try {
+    const { data, error } = await sb.from('mapas_comparativos').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    MAPAS_COMP = data || [];
+  } catch(e) { console.warn('Erro ao carregar mapas comparativos:', e); }
+}
+
+function filtrarMapasComp() {
+  const q = (document.getElementById('mc-f-search')?.value || '').toLowerCase();
+  const obraId = document.getElementById('mc-f-obra')?.value || '';
+  const estado = document.getElementById('mc-f-estado')?.value || '';
+  return MAPAS_COMP.filter(m => {
+    if (obraId && m.obra_id !== obraId) return false;
+    if (estado && m.estado !== estado) return false;
+    if (q) {
+      const obraNome = OBRAS.find(o => o.id === m.obra_id)?.nome || '';
+      if (!(`${m.titulo} ${obraNome}`).toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function renderMapasComp() {
+  const lista = filtrarMapasComp();
+  const cont = document.getElementById('mc-lista');
+  const empty = document.getElementById('mc-empty');
+  if (!cont) return;
+  if (lista.length === 0) {
+    cont.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  const grupos = {};
+  lista.forEach(m => {
+    const k = m.obra_id || '__sem_obra__';
+    if (!grupos[k]) grupos[k] = [];
+    grupos[k].push(m);
+  });
+  const chaves = Object.keys(grupos).sort((a,b) => {
+    if (a === '__sem_obra__') return 1;
+    if (b === '__sem_obra__') return -1;
+    const na = OBRAS.find(o=>o.id===a)?.nome||'';
+    const nb = OBRAS.find(o=>o.id===b)?.nome||'';
+    return na.localeCompare(nb, 'pt');
+  });
+
+  cont.innerHTML = chaves.map(k => {
+    const obraNome = k === '__sem_obra__' ? 'Sem obra associada' : (OBRAS.find(o=>o.id===k)?.nome || k);
+    const grupo = grupos[k];
+    const cards = grupo.map(m => {
+      const est = MC_ESTADO_CFG[m.estado] || MC_ESTADO_CFG.rascunho;
+      const pedido = m.pedido_id ? COMPRAS.find(c => c.id === m.pedido_id) : null;
+      return `<div class="card" style="padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:160px">
+          <div style="font-weight:600;font-size:14px;color:var(--gray-800)">${m.titulo}</div>
+          ${pedido ? `<div style="font-size:11px;color:var(--gray-400);margin-top:2px">Pedido: ${pedido.titulo}</div>` : ''}
+          ${m.descricao ? `<div style="font-size:12px;color:var(--gray-500);margin-top:2px">${m.descricao}</div>` : ''}
+        </div>
+        <span class="badge ${est.cls}">${est.label}</span>
+        <div style="font-size:11px;color:var(--gray-400)">${(m.created_at||'').slice(0,10)}</div>
+        <button class="btn btn-secondary btn-sm" onclick="abrirMapaComparativo('${m.id}')">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:13px;height:13px"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+          Ver mapa
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="editarMapaComp('${m.id}')">Editar</button>
+      </div>`;
+    }).join('');
+    return `<div style="margin-bottom:4px">
+      <div style="display:flex;align-items:center;gap:8px;margin:16px 0 6px">
+        <div style="width:10px;height:10px;border-radius:50%;background:var(--blue-500)"></div>
+        <span style="font-size:14px;font-weight:600;color:var(--gray-800)">${obraNome}</span>
+        <span style="font-weight:400;color:var(--gray-400);font-size:13px">(${grupo.length})</span>
+      </div>
+      ${cards}
+    </div>`;
+  }).join('');
+}
+
+function populaMcObras() {
+  ['mc-f-obra','mmc-obra'].forEach(sid => {
+    const sel = document.getElementById(sid);
+    if (!sel) return;
+    const val = sel.value;
+    const prefix = sid === 'mc-f-obra' ? '<option value="">Todas</option>' : '<option value="">— Sem obra —</option>';
+    sel.innerHTML = prefix + OBRAS.filter(o=>o.ativa).map(o=>`<option value="${o.id}">${o.nome}</option>`).join('');
+    if (val) sel.value = val;
+  });
+}
+
+function populaMcPedidos() {
+  const sel = document.getElementById('mmc-pedido');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Sem pedido —</option>' +
+    COMPRAS.map(c => `<option value="${c.id}">${c.titulo}</option>`).join('');
+}
+
+async function openModalMapa(pedidoId) {
+  _mcMapaAtual = null;
+  _mcFornecedores = [];
+  _mcLinhas = [];
+  document.getElementById('mmc-title').textContent = 'Novo Mapa Comparativo';
+  document.getElementById('mmc-sub').textContent = 'Preencha os dados do mapa';
+  document.getElementById('mmc-id').value = '';
+  document.getElementById('mmc-titulo').value = '';
+  document.getElementById('mmc-descricao').value = '';
+  document.getElementById('mmc-estado').value = 'rascunho';
+  document.getElementById('mmc-mostrar-venda').checked = false;
+  populaMcObras();
+  populaMcPedidos();
+  if (pedidoId) {
+    const c = COMPRAS.find(x => x.id === pedidoId);
+    if (c) {
+      document.getElementById('mmc-pedido').value = pedidoId;
+      document.getElementById('mmc-titulo').value = `Mapa Comparativo — ${c.titulo}`;
+      if (c.obraId) document.getElementById('mmc-obra').value = c.obraId;
+      if (c.fornecedor) {
+        const forn = FORNECEDORES.find(f => f.nome === c.fornecedor);
+        _mcFornecedores = [{ id: forn?.id || null, nome: forn?.nome || c.fornecedor }];
+      }
+    }
+  }
+  document.getElementById('mmc-del-btn').style.display = 'none';
+  renderMmcFornecedores();
+  renderMmcLinhas();
+  openModal('modal-mapa-comp');
+}
+
+async function editarMapaComp(id) {
+  const m = MAPAS_COMP.find(x => x.id === id);
+  if (!m) return;
+  _mcMapaAtual = m;
+  document.getElementById('mmc-title').textContent = 'Editar Mapa Comparativo';
+  document.getElementById('mmc-sub').textContent = `Criado em ${(m.created_at||'').slice(0,10)}`;
+  document.getElementById('mmc-id').value = m.id;
+  document.getElementById('mmc-titulo').value = m.titulo;
+  document.getElementById('mmc-descricao').value = m.descricao || '';
+  document.getElementById('mmc-estado').value = m.estado || 'rascunho';
+  document.getElementById('mmc-mostrar-venda').checked = !!m.mostrar_venda;
+  populaMcObras();
+  populaMcPedidos();
+  document.getElementById('mmc-obra').value = m.obra_id || '';
+  document.getElementById('mmc-pedido').value = m.pedido_id || '';
+  document.getElementById('mmc-del-btn').style.display = '';
+
+  try {
+    const [{ data: linhas }, { data: vals }] = await Promise.all([
+      sb.from('mapa_linhas').select('*').eq('mapa_id', id).order('ordem'),
+      sb.from('mapa_fornecedor_valores').select('*').eq('mapa_id', id)
+    ]);
+    _mcLinhas = (linhas || []).map(l => ({
+      ...l,
+      _valores: (vals || []).filter(v => v.linha_id === l.id)
+    }));
+    const fornNomes = [...new Set((vals||[]).map(v => v.fornecedor_nome).filter(Boolean))];
+    _mcFornecedores = fornNomes.map(nome => {
+      const forn = FORNECEDORES.find(f => f.nome === nome);
+      return { id: forn?.id || null, nome };
+    });
+  } catch(e) { _mcLinhas = []; _mcFornecedores = []; }
+
+  renderMmcFornecedores();
+  renderMmcLinhas();
+  openModal('modal-mapa-comp');
+}
+
+function renderMmcFornecedores() {
+  const cont = document.getElementById('mmc-forn-lista');
+  if (!cont) return;
+  cont.innerHTML = _mcFornecedores.map((f, i) =>
+    `<div style="display:inline-flex;align-items:center;gap:6px;background:var(--blue-50);border:1px solid var(--blue-200);border-radius:20px;padding:4px 10px;font-size:13px">
+      <span>${f.nome}</span>
+      <button type="button" onclick="removerFornecedorMapa(${i})" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:14px;line-height:1;padding:0 2px">&times;</button>
+    </div>`
+  ).join('');
+  renderMmcLinhas();
+}
+
+function adicionarFornecedorMapa() {
+  const inp = document.getElementById('mmc-forn-add-input');
+  if (!inp) return;
+  const nome = inp.value.trim();
+  if (!nome) return;
+  if (_mcFornecedores.find(f => f.nome.toLowerCase() === nome.toLowerCase())) {
+    showToast('Fornecedor já adicionado'); return;
+  }
+  const forn = FORNECEDORES.find(f => f.nome.toLowerCase() === nome.toLowerCase());
+  _mcFornecedores.push({ id: forn?.id || null, nome: forn?.nome || nome });
+  inp.value = '';
+  renderMmcFornecedores();
+}
+
+function removerFornecedorMapa(idx) {
+  _mcFornecedores.splice(idx, 1);
+  renderMmcFornecedores();
+}
+
+function renderMmcLinhas() {
+  const tbody = document.getElementById('mmc-linhas-tbody');
+  const thVenda = document.getElementById('mmc-th-venda');
+  if (!tbody) return;
+  const mostrarVenda = document.getElementById('mmc-mostrar-venda')?.checked;
+  if (thVenda) thVenda.style.display = mostrarVenda ? '' : 'none';
+
+  const header = document.getElementById('mmc-linhas-header');
+  if (header) {
+    Array.from(header.querySelectorAll('th[data-forn]')).forEach(th => th.remove());
+    const lastTh = header.querySelector('th:last-child');
+    _mcFornecedores.forEach((f, i) => {
+      const th = document.createElement('th');
+      th.setAttribute('data-forn', i);
+      th.style.minWidth = '120px';
+      th.textContent = f.nome;
+      header.insertBefore(th, lastTh);
+    });
+  }
+
+  if (_mcLinhas.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="${5 + _mcFornecedores.length}" style="text-align:center;color:var(--gray-400);font-size:13px;padding:12px">Sem linhas. Clique em "+ Adicionar linha".</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = _mcLinhas.map((l, li) => {
+    const fornCols = _mcFornecedores.map((f, fi) => {
+      const val = (l._valores || []).find(v => v.fornecedor_nome === f.nome);
+      const vUnit = val?.valor_unit ?? '';
+      return `<td>
+        <input type="number" min="0" step="0.01" value="${vUnit}"
+          style="width:100px;padding:4px 6px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px"
+          onchange="atualizarValorFornMapa(${li},${fi},this.value)"
+          placeholder="0.00"/>
+      </td>`;
+    }).join('');
+    return `<tr>
+      <td><input type="text" value="${l.descricao}" style="width:100%;padding:4px 6px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px" onchange="_mcLinhas[${li}].descricao=this.value"/></td>
+      <td><input type="text" value="${l.unidade||'un'}" style="width:60px;padding:4px 6px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px" onchange="_mcLinhas[${li}].unidade=this.value"/></td>
+      <td><input type="number" min="0" step="0.001" value="${l.quantidade||1}" style="width:80px;padding:4px 6px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px" onchange="_mcLinhas[${li}].quantidade=parseFloat(this.value)||1"/></td>
+      <td><input type="number" min="0" step="0.01" value="${l.valor_seco??''}" style="width:100px;padding:4px 6px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px" onchange="_mcLinhas[${li}].valor_seco=this.value?parseFloat(this.value):null" placeholder="0.00"/></td>
+      <td style="display:${mostrarVenda?'':'none'}"><input type="number" min="0" step="0.01" value="${l.valor_venda??''}" style="width:100px;padding:4px 6px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px" onchange="_mcLinhas[${li}].valor_venda=this.value?parseFloat(this.value):null" placeholder="0.00"/></td>
+      ${fornCols}
+      <td><button type="button" class="btn btn-secondary btn-sm" onclick="removerLinhaMapa(${li})" style="color:var(--red)">&times;</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function adicionarLinhaMapa() {
+  _mcLinhas.push({ id: null, descricao: '', unidade: 'un', quantidade: 1, valor_seco: null, valor_venda: null, _valores: [] });
+  renderMmcLinhas();
+}
+
+function removerLinhaMapa(idx) {
+  _mcLinhas.splice(idx, 1);
+  renderMmcLinhas();
+}
+
+function atualizarValorFornMapa(li, fi, val) {
+  if (!_mcLinhas[li]._valores) _mcLinhas[li]._valores = [];
+  const forn = _mcFornecedores[fi];
+  let entry = _mcLinhas[li]._valores.find(v => v.fornecedor_nome === forn.nome);
+  if (!entry) {
+    entry = { fornecedor_id: forn.id, fornecedor_nome: forn.nome, valor_unit: null, selecionado: false };
+    _mcLinhas[li]._valores.push(entry);
+  }
+  entry.valor_unit = val ? parseFloat(val) : null;
+  entry.valor_total = entry.valor_unit != null ? entry.valor_unit * (_mcLinhas[li].quantidade || 1) : null;
+}
+
+document.addEventListener('change', e => {
+  if (e.target.id === 'mmc-mostrar-venda') renderMmcLinhas();
+});
+
+async function saveMapaComp() {
+  const titulo = document.getElementById('mmc-titulo').value.trim();
+  if (!titulo) { showToast('O título é obrigatório'); return; }
+  const id = document.getElementById('mmc-id').value;
+  const rec = {
+    titulo,
+    descricao: document.getElementById('mmc-descricao').value.trim() || null,
+    obra_id: document.getElementById('mmc-obra').value || null,
+    pedido_id: document.getElementById('mmc-pedido').value || null,
+    estado: document.getElementById('mmc-estado').value,
+    mostrar_venda: document.getElementById('mmc-mostrar-venda').checked,
+    criado_por: currentUser?.username || null,
+    criado_nome: currentUser?.nome || currentUser?.username || null,
+    updated_at: new Date().toISOString()
+  };
+  try {
+    let mapaId = id;
+    if (id) {
+      const { error } = await sb.from('mapas_comparativos').update(rec).eq('id', id);
+      if (error) throw error;
+      const idx = MAPAS_COMP.findIndex(m => m.id === id);
+      if (idx >= 0) MAPAS_COMP[idx] = { ...MAPAS_COMP[idx], ...rec };
+    } else {
+      const { data, error } = await sb.from('mapas_comparativos').insert(rec).select().single();
+      if (error) throw error;
+      mapaId = data.id;
+      MAPAS_COMP.unshift(data);
+    }
+
+    if (mapaId) {
+      await sb.from('mapa_linhas').delete().eq('mapa_id', mapaId);
+      for (let i = 0; i < _mcLinhas.length; i++) {
+        const l = _mcLinhas[i];
+        if (!l.descricao.trim()) continue;
+        const { data: linhaData, error: leErr } = await sb.from('mapa_linhas').insert({
+          mapa_id: mapaId, ordem: i, descricao: l.descricao, unidade: l.unidade||'un',
+          quantidade: l.quantidade||1, valor_seco: l.valor_seco||null, valor_venda: l.valor_venda||null
+        }).select().single();
+        if (leErr) continue;
+        const vals = (l._valores || []).filter(v => v.valor_unit != null);
+        if (vals.length) {
+          await sb.from('mapa_fornecedor_valores').insert(vals.map(v => ({
+            mapa_id: mapaId, linha_id: linhaData.id,
+            fornecedor_id: v.fornecedor_id || null,
+            fornecedor_nome: v.fornecedor_nome,
+            valor_unit: v.valor_unit,
+            valor_total: v.valor_unit * (l.quantidade||1),
+            selecionado: !!v.selecionado
+          })));
+        }
+      }
+    }
+
+    closeModal('modal-mapa-comp');
+    const al = document.getElementById('mapa-alert');
+    if (al) { al.style.display=''; setTimeout(() => al.style.display='none', 3000); }
+    renderMapasComp();
+  } catch(e) { showToast('Erro ao guardar mapa: ' + (e.message||e)); }
+}
+
+async function apagarMapaComp() {
+  const id = document.getElementById('mmc-id').value;
+  if (!id) return;
+  if (!confirm('Apagar este mapa comparativo? Esta acção não pode ser revertida.')) return;
+  try {
+    await sb.from('mapas_comparativos').delete().eq('id', id);
+    MAPAS_COMP = MAPAS_COMP.filter(m => m.id !== id);
+    closeModal('modal-mapa-comp');
+    renderMapasComp();
+  } catch(e) { showToast('Erro ao apagar: ' + (e.message||e)); }
+}
+
+async function abrirMapaComparativo(id) {
+  const m = MAPAS_COMP.find(x => x.id === id);
+  if (!m) return;
+  const sec = document.getElementById('sec-mapas-comparativos');
+  if (sec) sec.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gray-400)">A carregar mapa...</div>';
+
+  try {
+    const [{ data: linhas }, { data: vals }] = await Promise.all([
+      sb.from('mapa_linhas').select('*').eq('mapa_id', id).order('ordem'),
+      sb.from('mapa_fornecedor_valores').select('*').eq('mapa_id', id)
+    ]);
+    const obraNome = OBRAS.find(o => o.id === m.obra_id)?.nome || '—';
+    const fornNomes = [...new Set((vals||[]).map(v => v.fornecedor_nome).filter(Boolean))];
+    const est = MC_ESTADO_CFG[m.estado] || MC_ESTADO_CFG.rascunho;
+
+    const totais = {};
+    fornNomes.forEach(fn => totais[fn] = 0);
+
+    const linhasHtml = (linhas||[]).map(l => {
+      const lVals = (vals||[]).filter(v => v.linha_id === l.id);
+      const fornTotais = fornNomes.map(fn => {
+        const v = lVals.find(x => x.fornecedor_nome === fn);
+        return v?.valor_total ?? (v?.valor_unit != null ? v.valor_unit * l.quantidade : null);
+      });
+      const minVal = Math.min(...fornTotais.filter(v => v != null));
+      const fornCols = fornNomes.map((fn, fi) => {
+        const vt = fornTotais[fi];
+        if (vt != null) totais[fn] += vt;
+        const isMin = vt != null && fornNomes.length > 1 && vt === minVal;
+        return `<td style="text-align:right;${isMin?'color:var(--green);font-weight:600;':''}">${vt!=null ? '€ ' + vt.toFixed(2) : '—'}</td>`;
+      }).join('');
+      return `<tr>
+        <td>${l.descricao}</td>
+        <td style="text-align:center">${l.unidade||'un'}</td>
+        <td style="text-align:right">${l.quantidade}</td>
+        ${l.valor_seco!=null ? `<td style="text-align:right">€ ${parseFloat(l.valor_seco).toFixed(2)}</td>` : '<td style="color:var(--gray-400)">—</td>'}
+        ${m.mostrar_venda ? (l.valor_venda!=null ? `<td style="text-align:right">€ ${parseFloat(l.valor_venda).toFixed(2)}</td>` : '<td style="color:var(--gray-400)">—</td>') : ''}
+        ${fornCols}
+      </tr>`;
+    }).join('');
+
+    const totalRow = fornNomes.length ? `<tr style="font-weight:700;background:var(--gray-50)">
+      <td colspan="${3 + (m.mostrar_venda?2:1)}">TOTAL</td>
+      ${fornNomes.map(fn => `<td style="text-align:right">€ ${totais[fn].toFixed(2)}</td>`).join('')}
+    </tr>` : '';
+
+    const minForn = fornNomes.length > 1 ? fornNomes.reduce((a,b) => totais[a]<=totais[b]?a:b) : null;
+
+    const html = `
+      <div style="max-width:960px;margin:0 auto;padding:0 0 24px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" onclick="goTo('mapas-comparativos',document.getElementById('nav-mapas-comp'));sbLoadMapasComp().then(renderMapasComp)">
+            ← Voltar
+          </button>
+          <div style="flex:1">
+            <div class="pg-title" style="font-size:18px">${m.titulo}</div>
+            <div style="font-size:13px;color:var(--gray-500)">Obra: ${obraNome} &nbsp;&middot;&nbsp; <span class="badge ${est.cls}">${est.label}</span></div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="editarMapaComp('${m.id}')">Editar</button>
+        </div>
+        ${minForn ? `<div style="background:var(--green-50,#f0fdf4);border:1px solid var(--green,#16a34a);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;color:var(--green)">
+          ✓ Proposta mais competitiva: <strong>${minForn}</strong> — Total: € ${totais[minForn].toFixed(2)}
+        </div>` : ''}
+        <div class="card" style="padding:0;overflow:hidden">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>Descrição</th><th>Un.</th><th>Qtd.</th>
+                <th>Valor Seco</th>
+                ${m.mostrar_venda ? '<th>Valor Venda</th>' : ''}
+                ${fornNomes.map(fn=>`<th>${fn}</th>`).join('')}
+              </tr></thead>
+              <tbody>${linhasHtml}${totalRow}</tbody>
+            </table>
+          </div>
+        </div>
+        ${m.descricao ? `<div style="font-size:13px;color:var(--gray-500);margin-top:12px">${m.descricao}</div>` : ''}
+      </div>`;
+
+    if (sec) sec.innerHTML = html;
+  } catch(e) { showToast('Erro ao abrir mapa: ' + (e.message||e)); }
+}
+
+// Botão "Mapa Comparativo" nos pedidos aprovados
+const _origRenderCompras = renderCompras;
+renderCompras = function() {
+  _origRenderCompras();
+  const tbody = document.getElementById('cmp-tbody');
+  if (!tbody) return;
+  tbody.querySelectorAll('tr:not(.cmp-group-row)').forEach(row => {
+    const btn = row.querySelector('button.btn-sm');
+    if (!btn || row.querySelector('.btn-mapa-comp')) return;
+    const m = (btn.getAttribute('onclick')||'').match(/editarCompra\('([^']+)'\)/);
+    if (!m) return;
+    const c = COMPRAS.find(x => String(x.id) === m[1]);
+    if (!c || c.estado !== 'aprovado') return;
+    const mapBtn = document.createElement('button');
+    mapBtn.className = 'btn btn-secondary btn-sm btn-mapa-comp';
+    mapBtn.title = 'Criar mapa comparativo';
+    mapBtn.style.cssText = 'margin-left:4px;color:var(--blue-500)';
+    mapBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:13px;height:13px"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg> Mapa';
+    mapBtn.onclick = () => {
+      goTo('mapas-comparativos', document.getElementById('nav-mapas-comp'));
+      setTimeout(() => openModalMapa(c.id), 200);
+    };
+    btn.parentElement.insertBefore(mapBtn, btn);
+  });
+};
+
+// Hook goTo para inicializar módulos ao navegar
+(function() {
+  const _prev = goTo;
+  goTo = function(id, btn) {
+    _prev(id, btn);
+    if (id === 'fornecedores') {
+      if (!FORNECEDORES.length) sbLoadFornecedores().then(() => renderFornecedores());
+      else renderFornecedores();
+    }
+    if (id === 'mapas-comparativos') {
+      populaMcObras();
+      sbLoadMapasComp().then(() => renderMapasComp());
+    }
+  };
+})();
+
+// Carregar fornecedores na inicialização
+sbLoadFornecedores();
+
+// Expor funções globais dos novos módulos
+Object.assign(window, {
+  renderFornecedores, openModalFornecedor, editarFornecedor,
+  saveFornecedor, apagarFornecedor, exportFornecedoresXLSX, fornPag,
+  renderMapasComp, openModalMapa, editarMapaComp, saveMapaComp,
+  apagarMapaComp, abrirMapaComparativo,
+  adicionarFornecedorMapa, removerFornecedorMapa,
+  adicionarLinhaMapa, removerLinhaMapa, atualizarValorFornMapa,
 });

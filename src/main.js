@@ -8,6 +8,4 @@ import './styles/global.css';
 import L from 'leaflet';
 window.L = L;
 
-// Importa a logica completa da aplicacao (migrada de portal_antigo.html)
-// app.js ja importa: supabase.js, config.js, utils/helpers.js
-import './app.js';
+// Importa a logic
