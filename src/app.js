@@ -1461,6 +1461,7 @@ async function refreshPortal(){
         'custos': ()=>renderCustos(),
         'comercial': ()=>renderComercial(),
         'permissoes': ()=>renderPermMatrix(),
+        'fecho-mes': ()=>renderFechoMes(),
       };
       if(renderMap[id]) renderMap[id]();
     }
@@ -6063,6 +6064,221 @@ async function savePainelCustomizer() {
   };
 })();
 
+// ══════════════════════════════════════════════════════════
+//  FOLHA DE FECHO — Resumo mensal de horas por trabalhador
+// ══════════════════════════════════════════════════════════
+
+async function renderFechoMes(){
+  const sel = document.getElementById('fecho-mes-sel');
+  if(!sel) return;
+  const mesVal = parseInt(sel.value);
+  const ano = 2026;
+
+  // Período: 22 do mês anterior → 21 do mês atual
+  const dataIni = new Date(ano, mesVal === 1 ? -1 : mesVal - 2, 22);
+  const dataFim = new Date(ano, mesVal - 1, 21);
+
+  // Atualiza info do período
+  const infoEl = document.getElementById('fecho-periodo-info');
+  if(infoEl) infoEl.textContent = 'Período: ' + fmt(dataIni) + ' a ' + fmt(dataFim);
+
+  const tbody = document.getElementById('fecho-tbody');
+  if(tbody) tbody.innerHTML = '<tr><td colspan="7" style="padding:40px;text-align:center;color:var(--gray-500)">A carregar dados\u2026</td></tr>';
+
+  // Buscar registos do período
+  const dIniStr = fmt(dataIni);
+  const dFimStr = fmt(dataFim);
+  const {data: regs, error} = await sb.from('registos_ponto').select('*').gte('data', dIniStr).lte('data', dFimStr);
+  if(error){
+    if(tbody) tbody.innerHTML = '<tr><td colspan="7" style="padding:32px;text-align:center;color:var(--red)">Erro ao carregar: ' + error.message + '</td></tr>';
+    return;
+  }
+
+  // Construir mapa: data → colabNumero → registo
+  const regMap = {};
+  (regs||[]).forEach(r => {
+    if(!regMap[r.data]) regMap[r.data] = {};
+    regMap[r.data][r.colab_numero] = r;
+  });
+
+  // Gerar lista de datas do período
+  const datas = [];
+  for(let d = new Date(dataIni); d <= dataFim; d.setDate(d.getDate()+1)) datas.push(new Date(d));
+
+  // Calcular horas por colaborador
+  const colabsAtivos = [...COLABORADORES].filter(c => c.ativo).sort((a,b) => a.n - b.n);
+  const rows = [];
+
+  for(const colab of colabsAtivos){
+    const {n, nome, func} = colab;
+    let totN = 0, totE = 0;
+    const obraHoras = {};
+
+    for(const d of datas){
+      const dk = fmt(d);
+      const r = (regMap[dk]||{})[n];
+      if(!r) continue;
+      if(r.tipo === 'Folga') continue;
+      const h = calcH(r.entrada ? r.entrada.slice(0,5) : '', r.saida ? r.saida.slice(0,5) : '', d);
+      totN += h.n;
+      totE += h.e;
+      const oId = r.obra_id || '_sem_obra';
+      obraHoras[oId] = (obraHoras[oId]||0) + h.t;
+    }
+
+    const totT = totN + totE;
+    if(totT === 0) continue;
+    rows.push({n, nome, func, totN, totE, totT, obraHoras});
+  }
+
+  // Renderizar tabela
+  let globalN = 0, globalE = 0, globalT = 0;
+  if(!tbody) return;
+
+  if(rows.length === 0){
+    tbody.innerHTML = '<tr><td colspan="7" style="padding:40px;text-align:center;color:var(--gray-400)">Sem registos para este per\u00edodo.</td></tr>';
+    const totaisEl = document.getElementById('fecho-totais');
+    if(totaisEl) totaisEl.style.display = 'none';
+    return;
+  }
+
+  const htmlRows = rows.map((row, i) => {
+    globalN += row.totN;
+    globalE += row.totE;
+    globalT += row.totT;
+
+    // Distribuição por obra
+    const obraEntries = Object.entries(row.obraHoras).sort((a,b) => b[1]-a[1]);
+    const obraBadges = obraEntries.map(([oId, horas]) => {
+      const pct = row.totT > 0 ? Math.round((horas / row.totT) * 100) : 0;
+      const obra = OBRAS.find(o => o.id === oId);
+      const oNome = obra ? (obra.nome || obra.numero || oId) : (oId === '_sem_obra' ? 'Sem obra' : oId);
+      return '<span style="display:inline-flex;align-items:center;gap:4px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:2px 8px;font-size:11px;font-weight:600;color:#1d4ed8;white-space:nowrap;margin:2px 2px 2px 0">' + oNome + ' <span style="color:var(--gray-500)">' + pct + '%</span></span>';
+    }).join('');
+
+    const bg = i % 2 === 0 ? '' : 'background:var(--gray-50)';
+    return '<tr style="' + bg + '">'
+      + '<td style="padding:10px 14px;color:var(--gray-500);font-family:\'DM Mono\',monospace;font-size:12px">' + row.n + '</td>'
+      + '<td style="padding:10px 14px;font-weight:600;color:var(--gray-900)">' + row.nome + '</td>'
+      + '<td style="padding:10px 14px;color:var(--gray-600);font-size:12px">' + (row.func||'\u2014') + '</td>'
+      + '<td style="padding:10px 14px;text-align:right;font-family:\'DM Mono\',monospace;color:var(--gray-700)">' + fmtH(row.totN) + '</td>'
+      + '<td style="padding:10px 14px;text-align:right;font-family:\'DM Mono\',monospace;color:#3b82f6">' + fmtH(row.totE) + '</td>'
+      + '<td style="padding:10px 14px;text-align:right;font-family:\'DM Mono\',monospace;font-weight:700;color:var(--green)">' + fmtH(row.totT) + '</td>'
+      + '<td style="padding:10px 14px">' + (obraBadges||'<span style="color:var(--gray-300);font-size:12px">\u2014</span>') + '</td>'
+      + '</tr>';
+  });
+  tbody.innerHTML = htmlRows.join('');
+
+  // Totais rodapé
+  const totaisEl = document.getElementById('fecho-totais');
+  if(totaisEl){
+    totaisEl.style.display = '';
+    document.getElementById('fecho-tot-n').textContent = fmtH(globalN);
+    document.getElementById('fecho-tot-e').textContent = fmtH(globalE);
+    document.getElementById('fecho-tot-t').textContent = fmtH(globalT);
+    document.getElementById('fecho-tot-w').textContent = rows.length;
+  }
+
+  // Guardar dados para exportação Excel
+  window._fechoMesData = {rows, mesVal, ano, dIniStr, dFimStr};
+}
+
+async function exportFechoMes(){
+  if(!window._fechoMesData || !window._fechoMesData.rows || !window._fechoMesData.rows.length){
+    showToast('Carregue primeiro os dados clicando em Atualizar.');
+    return;
+  }
+  const {rows, mesVal, dIniStr, dFimStr} = window._fechoMesData;
+  const mesNome = MESES_PT[mesVal-1];
+
+  showToast('A gerar ficheiro Excel\u2026');
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Plandese SA';
+  const ws = workbook.addWorksheet('Folha de Fecho');
+
+  ws.columns = [
+    {header:'N\u00ba', key:'n', width:6},
+    {header:'Nome', key:'nome', width:28},
+    {header:'Fun\u00e7\u00e3o', key:'func', width:18},
+    {header:'H.Normais', key:'hn', width:12},
+    {header:'H.Extra', key:'he', width:10},
+    {header:'Total', key:'ht', width:10},
+    {header:'Distribui\u00e7\u00e3o por Obra', key:'obras', width:50},
+  ];
+
+  // Linha de título (inserida antes do cabeçalho)
+  ws.spliceRows(1, 0, []);
+  ws.mergeCells('A1:G1');
+  const titleCell = ws.getCell('A1');
+  titleCell.value = 'Folha de Fecho \u2014 ' + mesNome + ' 2026 (' + dIniStr + ' a ' + dFimStr + ')';
+  titleCell.font = {bold:true, size:13, color:{argb:'FF002060'}};
+  titleCell.alignment = {horizontal:'center', vertical:'middle'};
+  titleCell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFD9E1F2'}};
+  ws.getRow(1).height = 22;
+
+  // Cabeçalhos da tabela
+  const hdr = ws.getRow(2);
+  ['N\u00ba','Nome','Fun\u00e7\u00e3o','H. Normais','H. Extra','Total Horas','Distribui\u00e7\u00e3o por Obra'].forEach((v,i) => {
+    const cell = hdr.getCell(i+1);
+    cell.value = v;
+    cell.font = {bold:true, color:{argb:'FFFFFFFF'}};
+    cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FF002060'}};
+    cell.alignment = {horizontal:'center', vertical:'middle'};
+  });
+  hdr.height = 18;
+
+  // Linhas de dados
+  rows.forEach((row, i) => {
+    const obraEntries = Object.entries(row.obraHoras).sort((a,b) => b[1]-a[1]);
+    const obraStr = obraEntries.map(([oId, h]) => {
+      const pct = row.totT > 0 ? Math.round((h/row.totT)*100) : 0;
+      const obra = OBRAS.find(o => o.id === oId);
+      const oNome = obra ? (obra.nome||obra.numero||oId) : (oId === '_sem_obra' ? 'Sem obra' : oId);
+      return oNome + ': ' + pct + '%';
+    }).join(' | ');
+
+    const dataRow = ws.getRow(i+3);
+    dataRow.values = [row.n, row.nome, row.func||'', fmtH(row.totN), fmtH(row.totE), fmtH(row.totT), obraStr];
+    dataRow.eachCell(cell => {
+      cell.alignment = {vertical:'middle', wrapText:true};
+      if(i%2===1) cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFF2F6FF'}};
+    });
+    dataRow.height = 16;
+  });
+
+  // Linha de totais
+  const totRow = ws.getRow(rows.length+3);
+  const globalN = rows.reduce((s,r) => s+r.totN, 0);
+  const globalE = rows.reduce((s,r) => s+r.totE, 0);
+  const globalT = rows.reduce((s,r) => s+r.totT, 0);
+  totRow.values = ['', 'TOTAL (' + rows.length + ' trabalhadores)', '', fmtH(globalN), fmtH(globalE), fmtH(globalT), ''];
+  totRow.eachCell(cell => {
+    cell.font = {bold:true, color:{argb:'FF002060'}};
+    cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFD9E1F2'}};
+    cell.alignment = {vertical:'middle', horizontal:'center'};
+  });
+  totRow.height = 18;
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Folha_Fecho_' + mesNome + '_2026.xlsx';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('\u2713 Ficheiro exportado!');
+}
+
+// Hook goTo para inicializar a Folha de Fecho ao navegar
+(function(){
+  const _prevGoTo = goTo;
+  goTo = function(id, btn){
+    _prevGoTo(id, btn);
+    if(id === 'fecho-mes') renderFechoMes();
+  };
+})();
+
 // ── Expor funções globais para handlers HTML (onclick=, onchange=, oninput=, etc.) ──
 // Necessário porque módulos ES têm scope próprio e não expõem funções ao window automaticamente.
 Object.assign(window, {
@@ -6165,4 +6381,7 @@ Object.assign(window, {
 
   // Actualizar
   refreshPortal,
+
+  // Folha de Fecho
+  renderFechoMes, exportFechoMes,
 });
