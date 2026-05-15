@@ -8,6 +8,10 @@ import './styles/global.css';
 import L from 'leaflet';
 window.L = L;
 
+// Html5Qrcode — exposto como global para compatibilidade com app.js (usa Html5Qrcode para QR scanner)
+import { Html5Qrcode } from 'html5-qrcode';
+window.Html5Qrcode = Html5Qrcode;
+
 // Importa a logica completa da aplicacao (migrada de portal_antigo.html)
 // app.js ja importa: supabase.js, config.js, utils/helpers.js
 import './app.js';
