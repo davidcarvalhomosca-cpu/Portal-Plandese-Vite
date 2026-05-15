@@ -1583,6 +1583,12 @@
               <option value="">Todos</option>
             </select>
           </div>
+          <div class="field">
+            <label>Obra</label>
+            <select id="comb-f-obra" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-family:'DM Sans',sans-serif;background:var(--white)">
+              <option value="">Todas as obras</option>
+            </select>
+          </div>
           <div class="field" style="align-self:flex-end">
             <button class="btn btn-primary" onclick="loadCombustivelAdmin()">
               <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
@@ -1591,17 +1597,105 @@
           </div>
         </div>
 
-        <!-- KPIs -->
-        <div class="eq-kpis" id="comb-kpis" style="display:none">
-          <div class="eq-kpi blue"><div class="eq-kpi-label">Total registos</div><div class="eq-kpi-value" id="comb-k-total">0</div><div class="eq-kpi-sub">abastecimentos</div></div>
-          <div class="eq-kpi orange"><div class="eq-kpi-label">Total litros</div><div class="eq-kpi-value" id="comb-k-litros">0</div><div class="eq-kpi-sub">litros</div></div>
-          <div class="eq-kpi green"><div class="eq-kpi-label">Gasóleo</div><div class="eq-kpi-value" id="comb-k-gasoleo">0</div><div class="eq-kpi-sub">litros</div></div>
-          <div class="eq-kpi yellow"><div class="eq-kpi-label">Gasolina</div><div class="eq-kpi-value" id="comb-k-gasolina">0</div><div class="eq-kpi-sub">litros</div></div>
-          <div class="eq-kpi" style="background:var(--blue-50);border:1.5px solid var(--blue-200)"><div class="eq-kpi-label" style="color:var(--blue-700)">Stock Depósito</div><div class="eq-kpi-value" id="comb-k-stock" style="color:var(--blue-700)">0</div><div class="eq-kpi-sub" style="color:var(--blue-500)">litros em depósito</div></div>
+        <!-- KPIs Combustível (período + stock real) -->
+        <div id="comb-kpis" style="display:none;margin-bottom:16px">
+
+          <!-- IDs legados (ocultos) para retrocompatibilidade -->
+          <span id="comb-k-total" style="display:none">0</span>
+          <span id="comb-k-litros" style="display:none">0</span>
+          <span id="comb-k-gasoleo" style="display:none">0</span>
+          <span id="comb-k-gasolina" style="display:none">0</span>
+
+          <!-- Linha: Entradas + Saídas + Stock Real -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 210px;gap:12px;margin-bottom:12px">
+
+            <!-- Entradas -->
+            <div class="card" style="padding:16px 20px">
+              <div style="display:flex;align-items:center;gap:7px;margin-bottom:14px">
+                <span style="display:inline-flex;width:20px;height:20px;background:#dcfce7;border-radius:50%;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#16a34a">↓</span>
+                <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#16a34a">Entradas no Depósito</span>
+                <span style="font-size:10px;color:var(--gray-400);margin-left:auto">acumulado real</span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px">
+                <div style="text-align:center;padding:8px 4px;border-radius:8px;background:#f0fdf4">
+                  <div style="font-size:9px;color:#86efac;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Hoje</div>
+                  <div id="comb-k-ent-dia" style="font-size:17px;font-weight:700;color:#16a34a;line-height:1">—</div>
+                  <div style="font-size:9px;color:#86efac;margin-top:3px">litros</div>
+                </div>
+                <div style="text-align:center;padding:8px 4px;border-radius:8px;background:#f0fdf4">
+                  <div style="font-size:9px;color:#86efac;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Semana</div>
+                  <div id="comb-k-ent-sem" style="font-size:17px;font-weight:700;color:#16a34a;line-height:1">—</div>
+                  <div style="font-size:9px;color:#86efac;margin-top:3px">litros</div>
+                </div>
+                <div style="text-align:center;padding:8px 4px;border-radius:8px;background:#f0fdf4">
+                  <div style="font-size:9px;color:#86efac;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Mês</div>
+                  <div id="comb-k-ent-mes" style="font-size:17px;font-weight:700;color:#16a34a;line-height:1">—</div>
+                  <div style="font-size:9px;color:#86efac;margin-top:3px">litros</div>
+                </div>
+                <div style="text-align:center;padding:8px 4px;border-radius:8px;background:#f0fdf4">
+                  <div style="font-size:9px;color:#86efac;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Ano</div>
+                  <div id="comb-k-ent-ano" style="font-size:17px;font-weight:700;color:#16a34a;line-height:1">—</div>
+                  <div style="font-size:9px;color:#86efac;margin-top:3px">litros</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Saídas -->
+            <div class="card" style="padding:16px 20px">
+              <div style="display:flex;align-items:center;gap:7px;margin-bottom:14px">
+                <span style="display:inline-flex;width:20px;height:20px;background:#fee2e2;border-radius:50%;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#dc2626">↑</span>
+                <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#dc2626">Saídas</span>
+                <span style="font-size:10px;color:var(--gray-400);margin-left:auto">depósito + viaturas</span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px">
+                <div style="text-align:center;padding:8px 4px;border-radius:8px;background:#fef2f2">
+                  <div style="font-size:9px;color:#fca5a5;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Hoje</div>
+                  <div id="comb-k-sai-dia" style="font-size:17px;font-weight:700;color:#dc2626;line-height:1">—</div>
+                  <div style="font-size:9px;color:#fca5a5;margin-top:3px">litros</div>
+                </div>
+                <div style="text-align:center;padding:8px 4px;border-radius:8px;background:#fef2f2">
+                  <div style="font-size:9px;color:#fca5a5;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Semana</div>
+                  <div id="comb-k-sai-sem" style="font-size:17px;font-weight:700;color:#dc2626;line-height:1">—</div>
+                  <div style="font-size:9px;color:#fca5a5;margin-top:3px">litros</div>
+                </div>
+                <div style="text-align:center;padding:8px 4px;border-radius:8px;background:#fef2f2">
+                  <div style="font-size:9px;color:#fca5a5;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Mês</div>
+                  <div id="comb-k-sai-mes" style="font-size:17px;font-weight:700;color:#dc2626;line-height:1">—</div>
+                  <div style="font-size:9px;color:#fca5a5;margin-top:3px">litros</div>
+                </div>
+                <div style="text-align:center;padding:8px 4px;border-radius:8px;background:#fef2f2">
+                  <div style="font-size:9px;color:#fca5a5;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Ano</div>
+                  <div id="comb-k-sai-ano" style="font-size:17px;font-weight:700;color:#dc2626;line-height:1">—</div>
+                  <div style="font-size:9px;color:#fca5a5;margin-top:3px">litros</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stock Real -->
+            <div class="card" style="padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:var(--blue-50);border:1.5px solid var(--blue-200)">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--blue-600);margin-bottom:10px">Stock Real Acumulado</div>
+              <div id="comb-k-stock" style="font-size:30px;font-weight:700;color:var(--blue-700);line-height:1;font-variant-numeric:tabular-nums">—</div>
+              <div style="font-size:11px;color:var(--blue-500);margin-top:6px">litros em depósito</div>
+              <div style="font-size:10px;color:var(--gray-400);margin-top:10px;line-height:1.4">Entradas − Saídas<br>todos os registos</div>
+            </div>
+
+          </div>
         </div>
 
-        <!-- Tabela -->
-        <div class="card" style="padding:0;overflow:hidden">
+        <!-- Toggle Vista -->
+        <div id="comb-toggle-bar" style="display:none;align-items:center;justify-content:flex-end;margin-bottom:12px">
+          <div style="display:flex;gap:0;background:var(--gray-100);border-radius:8px;padding:3px">
+            <button id="comb-btn-tabela" onclick="toggleCombView('tabela')" style="padding:6px 16px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;background:var(--white);color:var(--gray-800);box-shadow:0 1px 3px rgba(0,0,0,.1);transition:all .15s">
+              ☰ Tabela
+            </button>
+            <button id="comb-btn-obras" onclick="toggleCombView('obras')" style="padding:6px 16px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;background:transparent;color:var(--gray-500);box-shadow:none;transition:all .15s">
+              ⊞ Por Obra
+            </button>
+          </div>
+        </div>
+
+        <!-- Vista Tabela -->
+        <div id="comb-view-tabela" class="card" style="padding:0;overflow:hidden">
           <div class="tbl-wrap">
             <table>
               <thead>
@@ -1625,6 +1719,15 @@
             <div style="margin-top:6px">Sem registos. Defina o período e clique em "Pesquisar".</div>
           </div>
         </div>
+
+        <!-- Vista Por Obra (cartões) -->
+        <div id="comb-view-obras" style="display:none">
+          <div id="comb-obras-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px"></div>
+          <div id="comb-obras-empty" class="fat-empty" style="display:none">
+            <div style="margin-top:6px">Sem registos com obra associada.</div>
+          </div>
+        </div>
+
       </section>
 
       <!-- ══════════════ PRODUÇÃO ══════════════ -->
@@ -2672,114 +2775,3 @@
     <script src="/artigos-data.js"></script>
     <script type="module" src="/src/main.js"></script>
 </body>
-</html>
-        <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
-        Imprimir
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL FORNECEDOR -->
-<div class="modal-bg" id="modal-fornecedor">
-  <div class="modal" style="width:600px">
-    <div class="modal-title" id="mforn-title">Novo Fornecedor</div>
-    <div class="modal-sub" id="mforn-sub">Preencha os dados do fornecedor</div>
-    <input type="hidden" id="mforn-id"/>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <div class="field" style="grid-column:1/-1"><label>Nome *</label><input type="text" id="mforn-nome" placeholder="Nome completo do fornecedor"/></div>
-      <div class="field"><label>NIF</label><input type="text" id="mforn-nif" placeholder="Ex: 500000000"/></div>
-      <div class="field"><label>Nº de Conta</label><input type="text" id="mforn-conta" placeholder="Ex: 2211100001"/></div>
-      <div class="field"><label>Código Postal</label><input type="text" id="mforn-codpostal" placeholder="Ex: 1000-001"/></div>
-      <div class="field"><label>Localidade</label><input type="text" id="mforn-localidade" placeholder="Ex: Lisboa"/></div>
-      <div class="field" style="grid-column:1/-1"><label>Rua / Morada</label><input type="text" id="mforn-rua" placeholder="Ex: Rua das Flores, nº 1"/></div>
-      <div class="field"><label>Telefone</label><input type="text" id="mforn-telefone" placeholder="Ex: 210 000 000"/></div>
-      <div class="field"><label>Telemóvel</label><input type="text" id="mforn-telemovel" placeholder="Ex: 910 000 000"/></div>
-      <div class="field"><label>Email Geral</label><input type="email" id="mforn-email" placeholder="geral@fornecedor.pt"/></div>
-      <div class="field"><label>Email Compras</label><input type="email" id="mforn-email-compras" placeholder="compras@fornecedor.pt"/></div>
-      <div class="field"><label>Email Comercial</label><input type="email" id="mforn-email-comercial" placeholder="comercial@fornecedor.pt"/></div>
-      <div class="field"><label>Email Contabilidade</label><input type="email" id="mforn-email-contab" placeholder="contab@fornecedor.pt"/></div>
-      <div class="field" style="grid-column:1/-1"><label>Notas</label>
-        <textarea id="mforn-notas" style="resize:vertical;min-height:55px;width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px" placeholder="Observações…"></textarea>
-      </div>
-      <div class="field"><label>Estado</label>
-        <select id="mforn-ativo">
-          <option value="1">Activo</option>
-          <option value="0">Inactivo</option>
-        </select>
-      </div>
-    </div>
-    <div class="modal-footer" style="justify-content:space-between">
-      <button class="btn btn-secondary" id="mforn-del-btn" style="color:var(--red);border-color:var(--red-bg);display:none" onclick="apagarFornecedor()">Apagar</button>
-      <div style="display:flex;gap:8px;margin-left:auto">
-        <button class="btn btn-secondary" onclick="closeModal('modal-fornecedor')">Cancelar</button>
-        <button class="btn btn-primary" onclick="saveFornecedor()">Guardar</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL MAPA COMPARATIVO -->
-<div class="modal-bg" id="modal-mapa-comp">
-  <div class="modal" style="width:700px;max-height:90vh;overflow-y:auto">
-    <div class="modal-title" id="mmc-title">Novo Mapa Comparativo</div>
-    <div class="modal-sub" id="mmc-sub">Preencha os dados do mapa</div>
-    <input type="hidden" id="mmc-id"/>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <div class="field" style="grid-column:1/-1"><label>Título *</label><input type="text" id="mmc-titulo" placeholder="Ex: Mapa comparativo – Estrutura Metálica Obra Norte"/></div>
-      <div class="field"><label>Obra</label>
-        <select id="mmc-obra"><option value="">&#8212; Sem obra &#8212;</option></select>
-      </div>
-      <div class="field"><label>Pedido de compra associado</label>
-        <select id="mmc-pedido"><option value="">&#8212; Sem pedido &#8212;</option></select>
-      </div>
-      <div class="field"><label>Estado</label>
-        <select id="mmc-estado">
-          <option value="rascunho">Rascunho</option>
-          <option value="em_analise">Em análise</option>
-          <option value="aprovado">Aprovado</option>
-          <option value="arquivado">Arquivado</option>
-        </select>
-      </div>
-      <div class="field" style="display:flex;align-items:center;gap:8px;padding-top:22px">
-        <input type="checkbox" id="mmc-mostrar-venda" style="width:16px;height:16px;cursor:pointer"/>
-        <label for="mmc-mostrar-venda" style="margin:0;cursor:pointer">Mostrar coluna de valor de venda</label>
-      </div>
-      <div class="field" style="grid-column:1/-1"><label>Descrição</label>
-        <textarea id="mmc-descricao" style="resize:vertical;min-height:55px;width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px" placeholder="Observações…"></textarea>
-      </div>
-    </div>
-    <div style="margin:16px 0 8px;font-size:13px;font-weight:600;color:var(--gray-700)">Fornecedores a comparar</div>
-    <div id="mmc-forn-lista" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px"></div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <input type="text" id="mmc-forn-add-input" list="mmc-forn-add-list" placeholder="Pesquise fornecedor…" autocomplete="off" style="flex:1;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px"/>
-      <datalist id="mmc-forn-add-list"></datalist>
-      <button class="btn btn-secondary btn-sm" onclick="adicionarFornecedorMapa()" type="button">+ Adicionar</button>
-    </div>
-    <div style="margin:18px 0 8px;font-size:13px;font-weight:600;color:var(--gray-700)">Artigos / Itens</div>
-    <div class="card" style="padding:0;overflow:hidden;margin-bottom:8px">
-      <div class="tbl-wrap">
-        <table id="mmc-linhas-table">
-          <thead>
-            <tr id="mmc-linhas-header">
-              <th style="min-width:200px">Descrição</th>
-              <th>Unidade</th>
-              <th>Quantidade</th>
-              <th>Valor Seco</th>
-              <th id="mmc-th-venda" style="display:none">Valor Venda</th>
-            </tr>
-          </thead>
-          <tbody id="mmc-linhas-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-    <button class="btn btn-secondary btn-sm" onclick="adicionarLinhaMapa()" type="button">+ Adicionar linha</button>
-    <div class="modal-footer" style="justify-content:space-between;margin-top:16px">
-      <button class="btn btn-secondary" id="mmc-del-btn" style="color:var(--red);border-color:var(--red-bg);display:none" onclick="apagarMapaComp()">Apagar</button>
-      <div style="display:flex;gap:8px;margin-left:auto">
-        <button class="btn btn-secondary" onclick="closeModal('modal-mapa-comp')">Cancelar</button>
-        <button class="btn btn-primary" onclick="saveMapaComp()">Guardar</button>
-      </div>
-    </div>
-  </div>
-</div>
