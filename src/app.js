@@ -7525,56 +7525,88 @@ async function _chatFinalize() {
   await _chatAddBot('Um momento, a registar o pedido... ⏳', 300);
 
   try {
-    const urgencia = ['hoje','urgent','amanhã','amanha'].some(k => (_chat.prazo||'').toLowerCase().includes(k))
+    // Validar dados antes de inserir
+    if (!_chat.artigos || _chat.artigos.length === 0) throw new Error('Sem artigos');
+    if (!_chat.obraId) throw new Error('Obra não seleccionada');
+
+    const prazoLower = (_chat.prazo || '').toLowerCase();
+    const urgencia = (prazoLower.includes('hoje') || prazoLower.includes('urgent') || prazoLower.includes('amanh'))
       ? 'Urgente' : 'Normal';
 
     const titulo = _chat.artigos.length === 1
       ? _chat.artigos[0].nome
-      : `${_chat.artigos.length} materiais — ${_chat.artigos[0].nome}...`;
+      : (_chat.artigos.length + ' materiais — ' + _chat.artigos[0].nome + '...');
 
-    const artigos = _chat.artigos.map(a => ({
-      ref: a.ref, descricao: a.nome, unidade: a.unidade, quantidade: a.quantidade
-    }));
+    const artigosJSON = _chat.artigos.map(function(a) {
+      return { ref: a.ref || '', descricao: a.nome || '', unidade: a.unidade || 'un', quantidade: a.quantidade || '' };
+    });
 
-    const { data: pedido, error } = await sb.from('pedidos_compra').insert({
-      titulo,
-      descricao: `Pedido via assistente de chat por ${currentUser?.nome || ''}`,
+    const registo = {
+      titulo:      titulo,
+      descricao:   'Pedido via chat por ' + ((currentUser && currentUser.nome) || ''),
       obra_id:     _chat.obraId,
-      urgencia,
-      estado:      'Pendente',
-      notas:       `Prazo: ${_chat.prazo}`,
-      artigos,
-      criado_por:  currentUser?.username || '',
-      criado_nome: currentUser?.nome || '',
-    }).select('id').single();
+      urgencia:    urgencia,
+      estado:      'pendente',
+      notas:       'Prazo: ' + (_chat.prazo || ''),
+      artigos:     artigosJSON,
+      criado_por:  (currentUser && currentUser.username) || '',
+      criado_nome: (currentUser && currentUser.nome) || '',
+    };
 
-    if (error) throw error;
+    const res = await sb.from('pedidos_compra').insert(registo).select().single();
 
-    const ref = (pedido?.id || '').substring(0, 8).toUpperCase();
-    const listaFinal = _chat.artigos.map(a => `• ${a.nome} — ${a.quantidade}`).join('<br>');
+    if (res.error) {
+      console.error('Supabase insert error:', res.error);
+      throw new Error(res.error.message || 'Erro Supabase');
+    }
+
+    const pedidoId = res.data && res.data.id ? res.data.id.substring(0, 8).toUpperCase() : '---';
+    const listaFinal = _chat.artigos.map(function(a) {
+      return '• ' + _esc(a.nome) + ' — ' + _esc(a.quantidade);
+    }).join('<br>');
 
     await _chatAddBot(
-      `✅ <strong>Pedido registado com sucesso!</strong><br><br>` +
-      `<div class="chat-items-preview">` +
-      `📋 Ref: <strong>#${ref}</strong><br>` +
-      `🏗️ Obra: <strong>${_esc(_chat.obraNome)}</strong><br>` +
-      `📅 Prazo: <strong>${_esc(_chat.prazo)}</strong><br><br>` +
+      '✅ <strong>Pedido registado com sucesso!</strong><br><br>' +
+      '<div class="chat-items-preview">' +
+      '📋 Ref: <strong>#' + pedidoId + '</strong><br>' +
+      '🏗️ Obra: <strong>' + _esc(_chat.obraNome) + '</strong><br>' +
+      '📅 Prazo: <strong>' + _esc(_chat.prazo || '') + '</strong><br><br>' +
       listaFinal +
-      `</div><br>O responsável foi notificado. Obrigado! 👍`, 600
+      '</div><br>O responsável foi notificado. Obrigado! 👍', 600
     );
 
-    // Botão para novo pedido
     _chatShowChips([
-      { label: '🛒 Novo pedido', cls: 'green', onclick: () => { _chatReset(); _chatWelcome(); } },
-      { label: '← Voltar ao início', onclick: () => encVoltarHome() },
+      { label: '🛒 Novo pedido', cls: 'green', onclick: function() { _chatReset(); _chatWelcome(); } },
+      { label: '← Voltar ao início', onclick: function() { encVoltarHome(); } },
     ]);
 
-    // Refrescar lista de compras em background
-    if (typeof initCompras === 'function') initCompras().catch(() => {});
+    // Atualizar COMPRAS local e re-render se estiver na vista de compras
+    if (res.data) {
+      const novo = {
+        id:          res.data.id,
+        titulo:      registo.titulo,
+        artigos:     artigosJSON,
+        obraId:      registo.obra_id,
+        urgencia:    registo.urgencia,
+        estado:      registo.estado,
+        notas:       registo.notas,
+        criadoNome:  registo.criado_nome,
+        criado_por:  registo.criado_por,
+        created_at:  new Date().toISOString(),
+        dataLimite:  '',
+        fornecedor:  '',
+        fornecedores:[],
+        pedidoCotacao: false,
+        aprovadoDO:  false,
+        adjudicado:  false,
+      };
+      if (typeof COMPRAS !== 'undefined') COMPRAS.unshift(novo);
+      if (typeof renderCompras === 'function') try { renderCompras(); } catch(e2) {}
+    }
 
   } catch (e) {
-    console.error('chatFinalize:', e);
-    await _chatAddBot('⚠️ Ocorreu um erro ao registar o pedido. Tenta novamente.');
+    console.error('chatFinalize erro:', e);
+    await _chatAddBot('⚠️ Erro: ' + (e.message || 'Falha ao registar. Verifica a consola.'));
     if (inp) inp.disabled = false;
     _chat.step = 'obra';
   }
@@ -7610,6 +7642,9 @@ async function chatSend() {
     } else {
       _chatAskPrazo();
     }
+
+  } else if (_chat.step === 'prazo') {
+    _chatSetPrazo(val);
 
   } else if (_chat.step === 'obra') {
     const obras = (typeof OBRAS !== 'undefined' ? OBRAS : []).filter(function(o) { return o.ativa !== false; });
