@@ -5957,6 +5957,7 @@ const PAINEL_WIDGETS_DEF = [
   { id:'faturas',         label:'Faturas',            icon:'<path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zM7 7h7v2H7V7zm10 12H7v-2h10v2zm0-4H7v-2h10v2zm-4-7V3.5L18.5 9H13z"/>',  section:'faturas' },
   { id:'equipamentos',    label:'Equipamentos',       icon:'<path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/>',  section:'equipamentos' },
   { id:'combustivel',     label:'Combustível',        icon:'<path d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1.5v5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V9c0-.69-.28-1.32-.73-1.77zM18 10c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zM8 18v-4.5H6L10 7v5h2l-4 6z"/>',  section:'combustivel' },
+  { id:'controlo_obras',  label:'Controlo de Obras',  icon:'<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l7.59-7.59L21 8l-9 9z"/>',  section:'producao' },
 ];
 
 const PAINEL_DEFAULT_CONFIG = {
@@ -6153,6 +6154,98 @@ async function buildWidget(wid, obrasFiltro) {
         <span style="font-weight:600;color:var(--gray-900)">${r.litros||0} L</span>
       </div>`).join('');
       return _painelCard(def, `<div style="font-size:36px;font-weight:700;color:var(--blue);line-height:1">${totalLitros.toFixed(0)}<span style="font-size:16px;font-weight:400"> L</span></div><div style="font-size:12px;color:var(--gray-500);margin-bottom:12px">últimos 5 registos</div>${rows||'<div style="font-size:13px;color:var(--gray-400);padding:8px 0">Sem registos de combustível</div>'}${goBtn}`);
+    }
+
+    if (wid === 'controlo_obras') {
+      // Garantir que os dados extra e de produção estão carregados
+      _prodLoadLocal();
+      _loadObrasExtra();
+
+      const obrasAtivas = OBRAS.filter(o => o.ativa && (obrasFiltro.length === 0 || obrasFiltro.includes(o.id)));
+
+      if (obrasAtivas.length === 0) {
+        return _painelCard(def, `<div style="font-size:13px;color:var(--gray-400);padding:20px 0;text-align:center">Sem obras ativas</div>${goBtn}`);
+      }
+
+      // Calcular stats para cada obra ativa
+      const allStats = obrasAtivas.map(o => coComputeStats(o));
+
+      // Contagem por estado
+      const nOk   = allStats.filter(s => s.status === 'ok').length;
+      const nWarn = allStats.filter(s => s.status === 'warn').length;
+      const nBad  = allStats.filter(s => s.status === 'bad').length;
+
+      // Total faturado
+      const totalFat = allStats.reduce((sum, s) => sum + s.faturado, 0);
+
+      // Badge de estado colorido
+      const statusBadge = (st) => {
+        const cor = st === 'ok' ? 'var(--green,#16a34a)' : st === 'warn' ? 'var(--orange,#ea580c)' : 'var(--red,#dc2626)';
+        const bg  = st === 'ok' ? '#f0fdf4' : st === 'warn' ? '#fff7ed' : '#fef2f2';
+        const lbl = st === 'ok' ? 'OK' : st === 'warn' ? 'Atenção' : 'Alerta';
+        return `<span style="font-size:10px;font-weight:600;color:${cor};background:${bg};border-radius:4px;padding:2px 6px;white-space:nowrap">${lbl}</span>`;
+      };
+
+      // Barra de progresso
+      const progressBar = (pct, color) => {
+        const p = Math.min(100, Math.max(0, pct));
+        return `<div style="height:4px;background:var(--gray-100);border-radius:2px;overflow:hidden;margin-top:3px">
+          <div style="height:100%;width:${p}%;background:${color};border-radius:2px;transition:width .3s"></div>
+        </div>`;
+      };
+
+      // Cabeçalho com contagens de estado
+      const resumo = `
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+          ${nOk   > 0 ? `<div style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--green,#16a34a);background:#f0fdf4;border-radius:6px;padding:4px 8px"><span style="font-weight:700">${nOk}</span> em curso</div>` : ''}
+          ${nWarn > 0 ? `<div style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--orange,#ea580c);background:#fff7ed;border-radius:6px;padding:4px 8px"><span style="font-weight:700">${nWarn}</span> atenção</div>` : ''}
+          ${nBad  > 0 ? `<div style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--red,#dc2626);background:#fef2f2;border-radius:6px;padding:4px 8px"><span style="font-weight:700">${nBad}</span> alerta</div>` : ''}
+        </div>`;
+
+      // Linhas por obra (máx 5, ordenadas: bad → warn → ok)
+      const sorted = allStats.slice().sort((a, b) => {
+        const rank = { bad: 0, warn: 1, ok: 2 };
+        return (rank[a.status] ?? 3) - (rank[b.status] ?? 3);
+      });
+
+      const rows = sorted.slice(0, 5).map(s => {
+        const temPrazo = s.tempoPct > 0;
+        const temExec  = s.execPct  > 0 || s.contratado > 0;
+        const execColor = s.status === 'bad' ? 'var(--red,#dc2626)' : s.status === 'warn' ? 'var(--orange,#ea580c)' : 'var(--blue)';
+
+        const prazoPart = temPrazo
+          ? `<div style="font-size:10px;color:var(--gray-400);margin-top:1px">
+               Tempo: ${s.tempoPct.toFixed(0)}%
+               ${s.diasRest !== null ? ` · ${s.diasRest >= 0 ? s.diasRest + 'd restantes' : Math.abs(s.diasRest) + 'd atraso'}` : ''}
+             </div>
+             ${progressBar(s.tempoPct, 'var(--gray-300)')}`
+          : '';
+
+        const execPart = temExec
+          ? `<div style="font-size:10px;color:var(--gray-400);margin-top:4px">
+               Execução: ${s.execPct.toFixed(0)}%
+               ${s.faturado > 0 ? ` · ${prodFmtEur(s.faturado)}` : ''}
+             </div>
+             ${progressBar(s.execPct, execColor)}`
+          : '';
+
+        return `<div style="padding:8px 0;border-bottom:1px solid var(--gray-100)">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+            <span style="font-size:12px;font-weight:500;color:var(--gray-800);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${s.obra.nome}</span>
+            ${statusBadge(s.status)}
+          </div>
+          ${prazoPart}${execPart}
+        </div>`;
+      }).join('');
+
+      const extra = sorted.length > 5 ? `<div style="font-size:11px;color:var(--gray-400);margin-top:6px">+${sorted.length - 5} mais obras</div>` : '';
+
+      const totalFatHtml = totalFat > 0
+        ? `<div style="font-size:11px;color:var(--gray-500);margin-top:10px;padding-top:8px;border-top:1px solid var(--gray-100)">
+             Total faturado: <strong style="color:var(--gray-800);font-family:'DM Mono',monospace">${prodFmtEur(totalFat)}</strong>
+           </div>` : '';
+
+      return _painelCard(def, `${resumo}${rows}${extra}${totalFatHtml}${goBtn}`);
     }
 
   } catch(e) {
