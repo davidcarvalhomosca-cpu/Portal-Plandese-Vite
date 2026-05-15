@@ -3343,12 +3343,12 @@ function depSetMovimento(tipo){
   if(tipo==='entrada'){
     btnE.style.background='#22c55e'; btnE.style.borderColor='#22c55e'; btnE.style.color='white';
     btnE.style.boxShadow='0 0 0 4px rgba(34,197,94,.3),0 4px 12px rgba(34,197,94,.4)'; btnE.style.transform='scale(1.02)';
-    btnS.style.background='rgba(255,255,255,.06)'; btnS.style.borderColor='rgba(255,255,255,.15)'; btnS.style.color='rgba(255,255,255,.4)';
+    btnS.style.background='rgba(255,255,255,.12)'; btnS.style.borderColor='rgba(255,255,255,.3)'; btnS.style.color='rgba(255,255,255,.7)';
     btnS.style.boxShadow='none'; btnS.style.transform='scale(1)';
   } else {
     btnS.style.background='#ef4444'; btnS.style.borderColor='#ef4444'; btnS.style.color='white';
     btnS.style.boxShadow='0 0 0 4px rgba(239,68,68,.3),0 4px 12px rgba(239,68,68,.4)'; btnS.style.transform='scale(1.02)';
-    btnE.style.background='rgba(255,255,255,.06)'; btnE.style.borderColor='rgba(255,255,255,.15)'; btnE.style.color='rgba(255,255,255,.4)';
+    btnE.style.background='rgba(255,255,255,.12)'; btnE.style.borderColor='rgba(255,255,255,.3)'; btnE.style.color='rgba(255,255,255,.7)';
     btnE.style.boxShadow='none'; btnE.style.transform='scale(1)';
   }
 }
