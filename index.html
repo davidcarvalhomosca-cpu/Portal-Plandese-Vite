@@ -348,16 +348,18 @@
         <!-- Tipo de movimento (toggle) -->
         <div class="enc-field">
           <label>Movimento</label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <button id="dep-btn-entrada" onclick="depSetMovimento('entrada')"
-              style="padding:10px 6px;border-radius:var(--radius-lg);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:2px solid #22c55e;background:#22c55e;color:white;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px">
-              <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px"><path d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8z"/></svg>
+              style="padding:18px 8px;border-radius:var(--radius-lg);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;border:2px solid #22c55e;background:#22c55e;color:white;transition:all .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;box-shadow:0 0 0 4px rgba(34,197,94,.3),0 4px 12px rgba(34,197,94,.4);transform:scale(1.02)">
+              <svg viewBox="0 0 24 24" fill="currentColor" style="width:22px;height:22px"><path d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8z"/></svg>
               Entrada
+              <span style="font-size:10px;font-weight:500;opacity:.9;letter-spacing:.3px">+ litros no depósito</span>
             </button>
             <button id="dep-btn-saida" onclick="depSetMovimento('saida')"
-              style="padding:10px 6px;border-radius:var(--radius-lg);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px">
-              <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8z"/></svg>
+              style="padding:18px 8px;border-radius:var(--radius-lg);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;border:2px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);transition:all .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;box-shadow:none;transform:scale(1)">
+              <svg viewBox="0 0 24 24" fill="currentColor" style="width:22px;height:22px"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8z"/></svg>
               Saída
+              <span style="font-size:10px;font-weight:500;letter-spacing:.3px">− litros do depósito</span>
             </button>
           </div>
         </div>
@@ -1595,6 +1597,7 @@
           <div class="eq-kpi orange"><div class="eq-kpi-label">Total litros</div><div class="eq-kpi-value" id="comb-k-litros">0</div><div class="eq-kpi-sub">litros</div></div>
           <div class="eq-kpi green"><div class="eq-kpi-label">Gasóleo</div><div class="eq-kpi-value" id="comb-k-gasoleo">0</div><div class="eq-kpi-sub">litros</div></div>
           <div class="eq-kpi yellow"><div class="eq-kpi-label">Gasolina</div><div class="eq-kpi-value" id="comb-k-gasolina">0</div><div class="eq-kpi-sub">litros</div></div>
+          <div class="eq-kpi" style="background:var(--blue-50);border:1.5px solid var(--blue-200)"><div class="eq-kpi-label" style="color:var(--blue-700)">Stock Depósito</div><div class="eq-kpi-value" id="comb-k-stock" style="color:var(--blue-700)">0</div><div class="eq-kpi-sub" style="color:var(--blue-500)">litros em depósito</div></div>
         </div>
 
         <!-- Tabela -->
@@ -1606,6 +1609,7 @@
                   <th>Data</th>
                   <th>Viatura / Máquina</th>
                   <th>Obra</th>
+                  <th>Movimento</th>
                   <th>Litros</th>
                   <th>Tipo</th>
                   <th>Fornecedor</th>

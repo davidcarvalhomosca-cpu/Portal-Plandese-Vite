@@ -3342,10 +3342,14 @@ function depSetMovimento(tipo){
   const btnS=document.getElementById('dep-btn-saida');
   if(tipo==='entrada'){
     btnE.style.background='#22c55e'; btnE.style.borderColor='#22c55e'; btnE.style.color='white';
-    btnS.style.background='rgba(255,255,255,.08)'; btnS.style.borderColor='rgba(255,255,255,.2)'; btnS.style.color='rgba(255,255,255,.6)';
+    btnE.style.boxShadow='0 0 0 4px rgba(34,197,94,.3),0 4px 12px rgba(34,197,94,.4)'; btnE.style.transform='scale(1.02)';
+    btnS.style.background='rgba(255,255,255,.06)'; btnS.style.borderColor='rgba(255,255,255,.15)'; btnS.style.color='rgba(255,255,255,.4)';
+    btnS.style.boxShadow='none'; btnS.style.transform='scale(1)';
   } else {
-    btnS.style.background='#f97316'; btnS.style.borderColor='#f97316'; btnS.style.color='white';
-    btnE.style.background='rgba(255,255,255,.08)'; btnE.style.borderColor='rgba(255,255,255,.2)'; btnE.style.color='rgba(255,255,255,.6)';
+    btnS.style.background='#ef4444'; btnS.style.borderColor='#ef4444'; btnS.style.color='white';
+    btnS.style.boxShadow='0 0 0 4px rgba(239,68,68,.3),0 4px 12px rgba(239,68,68,.4)'; btnS.style.transform='scale(1.02)';
+    btnE.style.background='rgba(255,255,255,.06)'; btnE.style.borderColor='rgba(255,255,255,.15)'; btnE.style.color='rgba(255,255,255,.4)';
+    btnE.style.boxShadow='none'; btnE.style.transform='scale(1)';
   }
 }
 
@@ -3588,7 +3592,7 @@ async function loadCombustivelAdmin(){
   const equip=document.getElementById('comb-f-equip').value;
   const tbody=document.getElementById('comb-tbody');
   const empty=document.getElementById('comb-empty');
-  tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--gray-400)">A carregar…</td></tr>';
+  tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--gray-400)">A carregar…</td></tr>';
   empty.style.display='none';
   try{
     let q=sb.from('registos_combustivel').select('*').order('data',{ascending:false}).order('criado_em',{ascending:false});
@@ -3602,19 +3606,44 @@ async function loadCombustivelAdmin(){
     const totalLitros=rows.reduce((s,r)=>s+(parseFloat(r.litros)||0),0);
     const gasoleo=rows.filter(r=>r.tipo_combustivel==='Gasóleo').reduce((s,r)=>s+(parseFloat(r.litros)||0),0);
     const gasolina=rows.filter(r=>r.tipo_combustivel==='Gasolina').reduce((s,r)=>s+(parseFloat(r.litros)||0),0);
+    // Stock do depósito: entradas (+) menos saídas (-), apenas registos tipo 'deposito'
+    const stockDeposito=rows.filter(r=>r.tipo_registo==='deposito').reduce((s,r)=>{
+      const l=parseFloat(r.litros)||0;
+      return s+(r.movimento==='saida'?-l:l);
+    },0);
     document.getElementById('comb-k-total').textContent=rows.length;
     document.getElementById('comb-k-litros').textContent=totalLitros.toFixed(1)+'L';
     document.getElementById('comb-k-gasoleo').textContent=gasoleo.toFixed(1)+'L';
     document.getElementById('comb-k-gasolina').textContent=gasolina.toFixed(1)+'L';
+    const stockEl=document.getElementById('comb-k-stock');
+    if(stockEl){
+      stockEl.textContent=(stockDeposito>=0?'+':'')+stockDeposito.toFixed(1)+'L';
+      stockEl.style.color=stockDeposito>=0?'var(--blue-700)':'#b91c1c';
+      stockEl.closest('.eq-kpi').style.borderColor=stockDeposito>=0?'var(--blue-200)':'#fecaca';
+      stockEl.closest('.eq-kpi').style.background=stockDeposito>=0?'var(--blue-50)':'#fef2f2';
+    }
     document.getElementById('comb-kpis').style.display='';
     // Tabela
     tbody.innerHTML=rows.map(r=>{
       const obraNome=OBRAS.find(o=>o.id===r.obra_id)?.nome||r.obra_id||'—';
+      const isEntrada=r.movimento==='entrada'||!r.movimento;
+      const litrosVal=parseFloat(r.litros)||0;
+      const litrosFormatado=r.litros!=null
+        ?(isEntrada
+          ?`<span style="font-weight:700;color:#16a34a">+${litrosVal.toFixed(1)}L</span>`
+          :`<span style="font-weight:700;color:#dc2626">−${litrosVal.toFixed(1)}L</span>`)
+        :'—';
+      const movBadge=r.tipo_registo==='deposito'
+        ?(isEntrada
+          ?`<span class="badge b-green" style="font-size:11px">↓ Entrada</span>`
+          :`<span class="badge b-red" style="font-size:11px">↑ Saída</span>`)
+        :`<span class="badge b-gray" style="font-size:11px">Viatura</span>`;
       return `<tr>
         <td>${fmtPT(r.data)}</td>
         <td style="font-weight:600">${r.equipamento_nome||'—'}</td>
         <td>${obraNome}</td>
-        <td style="font-weight:600;color:var(--orange)">${r.litros!=null?r.litros+'L':'—'}</td>
+        <td>${movBadge}</td>
+        <td>${litrosFormatado}</td>
         <td><span class="badge ${r.tipo_combustivel==='Gasóleo'?'b-blue':r.tipo_combustivel==='Gasolina'?'b-orange':'b-gray'}">${r.tipo_combustivel||'—'}</span></td>
         <td>${r.fornecedor||'—'}</td>
         <td>${r.encarregado_nome||'—'}</td>
@@ -3622,7 +3651,7 @@ async function loadCombustivelAdmin(){
       </tr>`;
     }).join('');
   }catch(e){
-    tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px;color:#b91c1c">Erro: ${e.message}</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:24px;color:#b91c1c">Erro: ${e.message}</td></tr>`;
   }
 }
 
@@ -3633,7 +3662,7 @@ function exportCombustivelXLSX(){
     if(cells.length) rows.push(cells);
   });
   if(!rows.length){showToast('Sem dados para exportar');return;}
-  const ws=XLSX.utils.aoa_to_sheet([['Data','Viatura/Máquina','Obra','Litros','Tipo','Fornecedor','Encarregado','Obs'],...rows]);
+  const ws=XLSX.utils.aoa_to_sheet([['Data','Viatura/Máquina','Obra','Movimento','Litros','Tipo','Fornecedor','Encarregado','Obs'],...rows]);
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Combustível');
   XLSX.writeFile(wb,`combustivel_${fmt(new Date())}.xlsx`);
