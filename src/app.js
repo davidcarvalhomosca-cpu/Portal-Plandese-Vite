@@ -7450,9 +7450,9 @@ async function _chatAskQuantidade() {
 
 function _chatConfirmArtigo(qtdTxt) {
   const artigo = {
-    ref: _chat.currentMaterial?.ref || '',
-    nome: _chat.currentMaterial?.nome || '',
-    unidade: _chat.currentMaterial?.unidade || 'un',
+    ref: (_chat.currentMaterial && _chat.currentMaterial.ref) || '',
+    nome: (_chat.currentMaterial && _chat.currentMaterial.nome) || '',
+    unidade: (_chat.currentMaterial && _chat.currentMaterial.unidade) || 'un',
     quantidade: qtdTxt,
   };
   _chat.artigos.push(artigo);
@@ -7460,21 +7460,31 @@ function _chatConfirmArtigo(qtdTxt) {
   _chatClearSuggestions();
   const inp = document.getElementById('chat-input');
   if (inp) inp.value = '';
-  _chatAskMais();
+  // Vai directamente para o prazo — mais rápido e intuitivo
+  _chatAskPrazoComResumo();
 }
 
-async function _chatAskMais() {
-  _chat.step = 'mais';
-  // Mostrar resumo dos artigos adicionados
-  const listaHtml = _chat.artigos.map(a =>
-    `• <strong>${a.nome}</strong> — ${a.quantidade}`
-  ).join('<br>');
-  await _chatAddBot(`Adicionado ✅<br><div class="chat-items-preview">${listaHtml}</div><br>Queres adicionar mais algum material?`);
-  _chatSetPlaceholder('');
+async function _chatAskPrazoComResumo() {
+  _chat.step = 'prazo';
+  const listaHtml = _chat.artigos.map(function(a) {
+    return '• <strong>' + _esc(a.nome) + '</strong> — ' + _esc(a.quantidade);
+  }).join('<br>');
+  await _chatAddBot(
+    'Adicionado ✅<br><div class="chat-items-preview">' + listaHtml + '</div><br>Para quando necessitas?'
+  );
+  _chatSetPlaceholder('Ex: sexta-feira, urgente, próxima semana...');
   _chatShowChips([
-    { label: '➕ Sim, adicionar mais', cls: 'green', onclick: () => { _chatAddUser('Sim, mais um'); _chatClearSuggestions(); _chat.step = 'material'; _chatSetPlaceholder('Escreve o próximo material...'); _chatAddBot('Qual o próximo material?'); } },
-    { label: '➡️ Não, continuar', onclick: () => { _chatAddUser('Não, continuar'); _chatClearSuggestions(); _chatAskPrazo(); } },
+    { label: 'Hoje',           onclick: function() { _chatAddUser('Hoje');           _chatSetPrazo('Hoje'); } },
+    { label: 'Amanhã',         onclick: function() { _chatAddUser('Amanhã');         _chatSetPrazo('Amanhã'); } },
+    { label: 'Esta semana',    onclick: function() { _chatAddUser('Esta semana');    _chatSetPrazo('Esta semana'); } },
+    { label: 'Próxima semana', onclick: function() { _chatAddUser('Próxima semana'); _chatSetPrazo('Próxima semana'); } },
+    { label: '➕ Mais material', cls: 'green', onclick: function() { _chatAddUser('Mais um material'); _chat.step = 'material'; _chatSetPlaceholder('Escreve o próximo material...'); _chatAddBot('Qual o próximo material?'); _chatClearSuggestions(); } },
   ]);
+}
+
+// Mantido para compatibilidade mas já não usado no fluxo principal
+async function _chatAskMais() {
+  _chatAskPrazoComResumo();
 }
 
 async function _chatAskPrazo() {
