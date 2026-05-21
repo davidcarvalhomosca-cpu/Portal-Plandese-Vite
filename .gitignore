@@ -1,7 +1,28 @@
 node_modules/
 dist/
+dist_backup/
+dist_mobile/
+
+# Variáveis de ambiente (nunca commitar)
 .env
+.env.local
+.env.*.local
+
+# Artefactos temporários do Vite
 *.timestamp-*.mjs
+
+# Ficheiros de migração e temporários
 portal_antigo.html
 migrar.py
 super_migrar.py
+temp_status.txt
+
+# Android — build e IDE
+android/.gradle/
+android/app/build/
+android/.idea/workspace.xml
+android/.idea/caches/
+
+# Scripts de deploy locais (opcionais)
+*.bat
+*.ps1

@@ -9,5 +9,6 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     chunkSizeWarningLimit: 2000,
+    base: './',
   },
 });

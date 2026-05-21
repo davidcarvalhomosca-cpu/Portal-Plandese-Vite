@@ -1,0 +1,15 @@
+{
+  "appId": "com.plandese.portal",
+  "appName": "Plandese Portal",
+  "webDir": "dist_mobile",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#ffffff",
+      "showSpinner": false
+    }
+  }
+}
