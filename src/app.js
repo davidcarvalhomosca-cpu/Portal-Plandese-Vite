@@ -66,7 +66,7 @@ import { sbLoadFornecedores, renderFornecedores, openModalFornecedor, saveFornec
 import { sbLoadMapasComp, renderMapasComp, openModalMapa, editarMapaComp, adicionarFornecedorMapa, removerFornecedorMapa, adicionarLinhaMapa, removerLinhaMapa, atualizarValorFornMapa, saveMapaComp, apagarMapaComp, abrirMapaComparativo, injectMapaCompBtns } from './modules/mapas-comp.js';
 
 // Férias
-import { renderMapaFerias, feriasNavAno } from './modules/ferias.js';
+import { renderMapaFerias, feriasNavAno, feriasTogglePrevista } from './modules/ferias.js';
 
 // ── Registry R — permite que módulos chamem funções de outros módulos sem imports circulares ──
 Object.assign(R, {
@@ -217,7 +217,7 @@ Object.assign(window, {
   encGoComprasChat, chatSend, chatOnInput,
 
   // Férias
-  renderMapaFerias, feriasNavAno,
+  renderMapaFerias, feriasNavAno, feriasTogglePrevista,
 });
 
 // ── Hooks goTo: inicializa cada secção quando navegada ──
