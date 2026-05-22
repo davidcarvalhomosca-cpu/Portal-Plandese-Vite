@@ -65,6 +65,9 @@ import { sbLoadFornecedores, renderFornecedores, openModalFornecedor, saveFornec
 // Mapas comparativos
 import { sbLoadMapasComp, renderMapasComp, openModalMapa, editarMapaComp, adicionarFornecedorMapa, removerFornecedorMapa, adicionarLinhaMapa, removerLinhaMapa, atualizarValorFornMapa, saveMapaComp, apagarMapaComp, abrirMapaComparativo, injectMapaCompBtns } from './modules/mapas-comp.js';
 
+// Férias
+import { renderMapaFerias, feriasNavAno } from './modules/ferias.js';
+
 // ── Registry R — permite que módulos chamem funções de outros módulos sem imports circulares ──
 Object.assign(R, {
   carregarDados,
@@ -212,6 +215,9 @@ Object.assign(window, {
 
   // Chat compras
   encGoComprasChat, chatSend, chatOnInput,
+
+  // Férias
+  renderMapaFerias, feriasNavAno,
 });
 
 // ── Hooks goTo: inicializa cada secção quando navegada ──
@@ -229,6 +235,7 @@ Object.assign(window, {
     if (id === 'producao')     { renderProdDashboard(); }
     if (id === 'fornecedores') { sbLoadFornecedores().then(() => renderFornecedores()); }
     if (id === 'mapas-comparativos') { sbLoadMapasComp().then(() => renderMapasComp()); }
+    if (id === 'mapa-ferias')        { renderMapaFerias(); }
   };
 })();
 
