@@ -305,7 +305,7 @@ export async function exportMensal(){
       [5,'CC1',hdrBCC,null],[6,'h',hdrBCC,null],[7,'CC2',hdrBCC,null],[8,'h',hdrBCC,null],
       [9,'CC3',hdrBCC,null],[10,'h',hdrBCC,null],[11,'CC4',hdrBCC,null],[12,'h',hdrBCC,null],
       [13,'Total',hdrBCC,null],[14,'Normais',hdrBCC,null],[15,'Extra',hdrBCC,null],
-      [16,'Férias',hdrBFP,F_FER],[17,'Faltas',hdrBFP,F_FAL],[18,'Desloc.',hdrBFPR,F_DES],
+      [16,'Férias',hdrBFP,F_FER],[17,'F.Injust.',hdrBFP,F_FAL],[18,'F.Just.',hdrBFPR,F_FAL],
     ];
     for(const [col,val,brd,fill] of hdrs){
       cell=ws.getCell(8,col); cell.value=val;
@@ -313,7 +313,7 @@ export async function exportMensal(){
       if(fill) cell.fill=exFill(fill);
     }
 
-    let totN=0,totE=0,dTrab=0,dFer=0,dFalt=0,dDes=0;
+    let totN=0,totE=0,dTrab=0,dFer=0,dFaltInj=0,dFaltJust=0;
     const obraHoras={};
 
     for(let i=0;i<datas.length;i++){
@@ -334,21 +334,18 @@ export async function exportMensal(){
       cell.font=exFont(false,9); cell.alignment=exAlign(); cell.border=bDay;
 
       const reg=(regMap[dStr]||{})[n];
-      let normH='',extraH='',totalH='',ferV='',faltV='',desV='',obraNome='';
+      let normH='',extraH='',totalH='',ferV='',faltInjV='',faltJustV='',obraNome='';
 
       if(reg){
-        const tipo=reg.tipo||'Normal';
+        const tipo=reg.tipo||'Presença';
         const ent=(reg.entrada||'').slice(0,5); const sai=(reg.saida||'').slice(0,5);
         obraNome=S.OBRAS.find(o=>o.id===reg.obra_id)?.nome||'';
         const hc=calcH(ent,sai,d);
         if(tipo==='Férias'){ferV=1;dFer++;}
-        else if(tipo&&tipo.includes('Falta')){faltV=1;dFalt++;}
-        else if(tipo&&(tipo.includes('Desloc')||tipo==='Deslocado')){
-          if(hc.t>0){normH=hc.n||'';extraH=hc.e||'';totalH=hc.t;totN+=hc.n;totE+=hc.e;dTrab++;
-            if(reg.obra_id){if(!obraHoras[reg.obra_id])obraHoras[reg.obra_id]={n:0,e:0};obraHoras[reg.obra_id].n+=hc.n;obraHoras[reg.obra_id].e+=hc.e;}
-          }
-          desV=1;dDes++;
-        } else {
+        else if(tipo==='Falta Injust.'){faltInjV=1;dFaltInj++;}
+        else if(tipo==='Falta Just.'){faltJustV=1;dFaltJust++;}
+        else if(tipo&&tipo.includes('Falta')){faltInjV=1;dFaltInj++;} // compat. registos antigos
+        else {
           if(hc.t>0){normH=hc.n||'';extraH=hc.e||'';totalH=hc.t;totN+=hc.n;totE+=hc.e;dTrab++;
             if(reg.obra_id){if(!obraHoras[reg.obra_id])obraHoras[reg.obra_id]={n:0,e:0};obraHoras[reg.obra_id].n+=hc.n;obraHoras[reg.obra_id].e+=hc.e;}
           }
@@ -369,10 +366,10 @@ export async function exportMensal(){
 
       cell=ws.getCell(row,16); cell.value=ferV||null; cell.alignment=exAlign(); cell.border=bData;
       if(ferV) cell.fill=exFill(F_FER);
-      cell=ws.getCell(row,17); cell.value=faltV||null; cell.alignment=exAlign(); cell.border=bData;
-      if(faltV) cell.fill=exFill(F_FAL);
-      cell=ws.getCell(row,18); cell.value=desV||null; cell.alignment=exAlign(); cell.border=bData;
-      if(desV) cell.fill=exFill(F_DES);
+      cell=ws.getCell(row,17); cell.value=faltInjV||null; cell.alignment=exAlign(); cell.border=bData;
+      if(faltInjV) cell.fill=exFill(F_FAL);
+      cell=ws.getCell(row,18); cell.value=faltJustV||null; cell.alignment=exAlign(); cell.border=bData;
+      if(faltJustV) cell.fill=exFill(F_FAL);
     }
 
     const sr=9+datas.length+1;
@@ -392,9 +389,9 @@ export async function exportMensal(){
     sc(sr+8,22,'Dias');
     sc(sr+8,28,'Dias trabalho',false,null,F_TR); sc(sr+8,29,dTrab,false,null,null,'center');
     sc(sr+9,28,'Dias de férias',false,null,F_FE); sc(sr+9,29,dFer,false,null,null,'center');
-    sc(sr+10,28,'Dias de falta',false,null,F_FA); sc(sr+10,29,dFalt,false,null,null,'center');
-    sc(sr+11,28,'Dias deslocado',false,null,F_DE); sc(sr+11,29,dDes,false,null,null,'center');
-    summaryData.push({n,nome,func,totN,totE,obraHoras});
+    sc(sr+10,28,'Faltas Injust.',false,null,F_FA); sc(sr+10,29,dFaltInj,false,null,null,'center');
+    sc(sr+11,28,'Faltas Just.',false,null,F_FA); sc(sr+11,29,dFaltJust,false,null,null,'center');
+    summaryData.push({n,nome,func,totN,totE,obraHoras,dFer,dFaltInj,dFaltJust});
   }
 
   // ── FOLHA DE FECHO ──
@@ -403,11 +400,11 @@ export async function exportMensal(){
       (a,b)=>(S.OBRAS.find(o=>o.id===a)?.nome||'').localeCompare(S.OBRAS.find(o=>o.id===b)?.nome||'')
     );
     const allObras=allObraIds.map(id=>({id,nome:S.OBRAS.find(o=>o.id===id)?.nome||id}));
-    const fixedCount=6;
+    const fixedCount=9;
     const obraColStart=fixedCount+1;
     const totalCols=fixedCount+allObras.length*2;
     wsFecho.columns=[
-      {width:6},{width:26},{width:14},{width:11},{width:11},{width:11},
+      {width:6},{width:26},{width:14},{width:11},{width:11},{width:11},{width:10},{width:10},{width:10},
       ...allObras.flatMap(()=>[{width:10},{width:9}])
     ];
     wsFecho.mergeCells(1,1,1,totalCols);
@@ -428,7 +425,7 @@ export async function exportMensal(){
     wsFecho.getRow(2).height=16;
     const hBg='FF1D4ED8',hBg2='FF1E40AF',hFg='FFFFFFFF';
     const bH=exBorder('thin','thin','thin','thin');
-    const fixedHdrs=['Nº','Nome','Função','H.Normais','H.Extra','Total'];
+    const fixedHdrs=['Nº','Nome','Função','H.Normais','H.Extra','Total','Férias','F.Injust.','F.Just.'];
     fixedHdrs.forEach((v,i)=>{
       wsFecho.mergeCells(3,i+1,4,i+1);
       fc=wsFecho.getCell(3,i+1);
@@ -451,11 +448,12 @@ export async function exportMensal(){
     wsFecho.getRow(3).height=28; wsFecho.getRow(4).height=16;
     const grandObraH={};
     allObraIds.forEach(id=>{grandObraH[id]={n:0,e:0};});
-    let gN=0,gE=0;
+    let gN=0,gE=0,gFer=0,gFaltInj=0,gFaltJust=0;
     summaryData.forEach((w,idx)=>{
       const row=5+idx;
       const totW=Math.round((w.totN+w.totE)*100)/100;
       gN+=w.totN; gE+=w.totE;
+      gFer+=w.dFer||0; gFaltInj+=w.dFaltInj||0; gFaltJust+=w.dFaltJust||0;
       allObraIds.forEach(id=>{if(w.obraHoras[id]){grandObraH[id].n+=w.obraHoras[id].n;grandObraH[id].e+=w.obraHoras[id].e;}});
       const rowFg=idx%2===0?'FFFFFFFF':'FFF0F4FF';
       const bR=exBorder('thin','thin','thin','thin');
@@ -468,6 +466,9 @@ export async function exportMensal(){
       };
       wc(1,w.n,false,'FF374151');wc(2,w.nome,true,'FF111827');wc(3,w.func,false,'FF6B7280');
       wc(4,Math.round(w.totN*100)/100,true,'FF00B050');wc(5,Math.round(w.totE*100)/100,true,'FF993300');wc(6,totW,true,'FF002060');
+      wc(7,w.dFer>0?w.dFer:null,false,'FF00B050');
+      wc(8,w.dFaltInj>0?w.dFaltInj:null,false,'FFC00000');
+      wc(9,w.dFaltJust>0?w.dFaltJust:null,false,'FFC00000');
       allObras.forEach((obra,i)=>{
         const cH=obraColStart+i*2; const cP=cH+1;
         const oH=w.obraHoras[obra.id]||{n:0,e:0};
@@ -494,6 +495,7 @@ export async function exportMensal(){
     };
     wsFecho.mergeCells(totRow,1,totRow,3);tc(1,'TOTAL GERAL',true,'FF002060');
     tc(4,Math.round(gN*100)/100,true,'FF00B050');tc(5,Math.round(gE*100)/100,true,'FF993300');tc(6,gT,true,'FF002060');
+    tc(7,gFer>0?gFer:null,true,'FF00B050');tc(8,gFaltInj>0?gFaltInj:null,true,'FFC00000');tc(9,gFaltJust>0?gFaltJust:null,true,'FFC00000');
     allObras.forEach((obra,i)=>{
       const cH=obraColStart+i*2; const cP=cH+1;
       const oH=grandObraH[obra.id]||{n:0,e:0};
@@ -629,8 +631,4 @@ export function exportSemanaExcel(obraNome,obraData,days,semLabel){
   });
   wd.push([]);wd.push(['','','TOTAIS',...Array(7).fill(''),totN,totE,totT]);
   const ws=XLSX.utils.aoa_to_sheet(wd);
-  ws['!cols']=[{wch:6},{wch:22},{wch:16},...Array(7).fill({wch:16}),{wch:12},{wch:10},{wch:12}];
-  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:11}},{s:{r:1,c:0},e:{r:1,c:11}},{s:{r:2,c:0},e:{r:2,c:11}},{s:{r:3,c:0},e:{r:3,c:11}}];
-  XLSX.utils.book_append_sheet(wb,ws,obraNome.slice(0,31));
-  XLSX.writeFile(wb,`Plandese_${obraNome.replace(/\s/g,'_')}_${semLabel.replace(/\//g,'').replace(/\s/g,'').replace(/—/g,'_')}.xlsx`);
-}
+  ws['!cols']=[{wch:6},{wch:22},{wch:16},...Array(7).fill({wch:16})

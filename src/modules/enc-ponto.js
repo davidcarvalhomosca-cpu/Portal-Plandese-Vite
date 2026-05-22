@@ -60,7 +60,7 @@ async function encPassarColaboradores(){
   try {
     const {data:regs}=await sb.from('registos_ponto').select('*').eq('data',dk);
     if(regs&&regs.length>0){
-      S.REGISTOS[dk]=regs.map(r=>({colabN:r.colab_numero,obra:r.obra_id,entrada:r.entrada?.slice(0,5)||'',saida:r.saida?.slice(0,5)||'',tipo:r.tipo||'Normal'}));
+      S.REGISTOS[dk]=regs.map(r=>({colabN:r.colab_numero,obra:r.obra_id,entrada:r.entrada?.slice(0,5)||'',saida:r.saida?.slice(0,5)||'',tipo:r.tipo||'Presença'}));
       S.activeRows[dk]=regs.map(r=>r.colab_numero);
     } else { S.REGISTOS[dk]=[]; S.activeRows[dk]=[]; }
   } catch(e){ S.REGISTOS[dk]=[]; S.activeRows[dk]=[]; }
@@ -143,7 +143,7 @@ async function encAddColabN(n,chipEl){
   if(S.activeRows[dk].includes(n))return;
   S.activeRows[dk].push(n);
   if(!S.REGISTOS[dk])S.REGISTOS[dk]=[];
-  S.REGISTOS[dk].push({colabN:n,obra:S.encObraId,tipo:'Normal',entrada:S.encHoraIni,saida:S.encHoraFim});
+  S.REGISTOS[dk].push({colabN:n,obra:S.encObraId,tipo:'Presença',entrada:S.encHoraIni,saida:S.encHoraFim});
   if(chipEl){chipEl.style.background='var(--gray-100)';chipEl.style.color='var(--gray-400)';chipEl.style.borderColor='var(--gray-200)';chipEl.disabled=true;chipEl.textContent='✓ '+S.COLABORADORES.find(x=>x.n===n)?.nome.split(' ')[0];}
   buildEncList();buildEncColabSel();
 }
@@ -153,7 +153,7 @@ async function sbSaveRegistoEnc(dk,n){
   try {
     await sb.from('registos_ponto').upsert({
       data:dk, colab_numero:n, obra_id:r.obra||null,
-      entrada:r.entrada||null, saida:r.saida||null, tipo:r.tipo||'Normal'
+      entrada:r.entrada||null, saida:r.saida||null, tipo:r.tipo||'Presença'
     },{onConflict:'data,colab_numero'});
   } catch(e){console.warn('save registo:',e);}
 }
@@ -167,7 +167,7 @@ async function encAddColab(){
   if(S.activeRows[dk].includes(n)){showToast('Colaborador já adicionado');return;}
   S.activeRows[dk].push(n);
   if(!S.REGISTOS[dk])S.REGISTOS[dk]=[];
-  S.REGISTOS[dk].push({colabN:n,obra:S.encObraId,tipo:'Normal',entrada:S.encHoraIni,saida:S.encHoraFim});
+  S.REGISTOS[dk].push({colabN:n,obra:S.encObraId,tipo:'Presença',entrada:S.encHoraIni,saida:S.encHoraFim});
   sel.value='';
   buildEncList();buildEncColabSel();
   showToast('Colaborador adicionado ✓');
@@ -184,7 +184,7 @@ function buildEncList(){
     const d=new Date(dk+"T12:00:00");const h=calcH(saved.entrada,saved.saida,d);calcList.push(h);
     const ini=c.nome.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();
     let statusClass='',statusBadge='';
-    if(saved.tipo&&saved.tipo!=='Normal'&&saved.tipo!=='Hora Extra'){statusClass='ausente';statusBadge=`<span class="badge b-red">${saved.tipo}</span>`;}
+    if(saved.tipo&&saved.tipo!=='Presença'){statusClass='ausente';statusBadge=`<span class="badge b-red">${saved.tipo}</span>`;}
     else if(h.t>0){statusClass='completo';statusBadge='<span class="badge b-green">✓</span>';}
     else if(saved.entrada){statusClass='parcial';statusBadge='<span class="badge b-blue">Em curso</span>';}
     const card=document.createElement('div');
@@ -241,7 +241,7 @@ async function encTimeChange(n){
 async function encTipoChange(n){
   const tipo=document.getElementById('tipo-'+n)?.value;
   const card=document.getElementById('ec-'+n);
-  if(card&&tipo&&tipo!=='Normal'&&tipo!=='Hora Extra'){
+  if(card&&tipo&&tipo!=='Presença'){
     card.className='mob-colab-card ausente';
     const statusEl=card.querySelector('.mob-colab-status');
     if(statusEl)statusEl.innerHTML=`<span class="badge b-red">${tipo}</span>`;
@@ -458,3 +458,4 @@ export {
   encLoadHistorico, encGoFolhaPontoAluguer, encGoEquipamentos, encGoCombustivel,
   encVoltarHome, _encHideAll
 };
+                              

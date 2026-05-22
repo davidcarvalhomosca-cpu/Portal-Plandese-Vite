@@ -41,7 +41,7 @@ export async function carregarDados() {
         const dk = r.data;
         if (!S.REGISTOS[dk]) S.REGISTOS[dk] = [];
         if (!S.activeRows[dk]) S.activeRows[dk] = [];
-        S.REGISTOS[dk].push({colabN:r.colab_numero, obra:r.obra_id, entrada:r.entrada?.slice(0,5)||'', saida:r.saida?.slice(0,5)||'', tipo:r.tipo||'Normal'});
+        S.REGISTOS[dk].push({colabN:r.colab_numero, obra:r.obra_id, entrada:r.entrada?.slice(0,5)||'', saida:r.saida?.slice(0,5)||'', tipo:r.tipo||'Presença'});
         if (!S.activeRows[dk].includes(r.colab_numero)) S.activeRows[dk].push(r.colab_numero);
       });
     }
@@ -98,4 +98,3 @@ export function showSaveInd(){
   el.classList.add('show');
   clearTimeout(S.saveTimer);
   S.saveTimer=setTimeout(()=>el.classList.remove('show'),2000);
-}

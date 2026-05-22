@@ -150,7 +150,7 @@ async function buildWidget(wid, obrasFiltro) {
       days.forEach(dk => {
         const regs = S.REGISTOS[dk] || [];
         const filtrados = obrasFiltro.length > 0 ? regs.filter(r => obrasFiltro.includes(r.obra)) : regs;
-        filtrados.forEach(r => { presentes.add(r.colabN); if(r.tipo==='Normal'||r.tipo==='Hora Extra') total++; });
+        filtrados.forEach(r => { presentes.add(r.colabN); if(r.tipo==='Presença'||r.tipo==='Normal'||r.tipo==='Hora Extra') total++; });
       });
       const hoje = fmt(new Date());
       const hoje_regs = (S.REGISTOS[hoje] || []);
@@ -624,5 +624,4 @@ export {
   loadPainelConfig, savePainelConfig, renderPainel, buildWidget, _painelCard,
   openPainelCustomizer, closePainelCustomizer, savePainelCustomizer,
   painelWChkChange, painelObraChkChange,
-  renderFechoMes, exportFechoMes
-};
+  renderFechoM
