@@ -16,6 +16,14 @@ import { stopCombQrScanner } from './enc-combustivel.js';
 // ── ENCARREGADO — ESTADO ──────────────────────────────────────
 
 async function initEnc(){
+  // Mostrar home imediatamente (antes das chamadas async ao Supabase)
+  document.getElementById('enc-home-nome').textContent = S.currentUser?.nome?.split(' ')[0] || 'Encarregado';
+  document.getElementById('enc-screen0').style.cssText='display:flex;flex:1;flex-direction:column';
+  ['enc-screen-menu-ponto','enc-screen1','enc-screen2','enc-screen-equip',
+   'enc-screen-combustivel','enc-screen-comb-deposito','enc-screen-comb-viatura',
+   'enc-screen-historico-enc','enc-screen-aluguer','enc-screen-compras-chat']
+    .forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
+  _encUpdateCtxBar();
   // Preencher data com hoje
   document.getElementById('enc-data-sel').value = fmt(new Date());
   // Garantir empresas MOA e colaboradores actualizados (podem ter sido criados após o login)
@@ -35,14 +43,9 @@ async function initEnc(){
   const os=document.getElementById('enc-obra-sel');
   os.innerHTML='<option value="">— Selecione uma obra —</option>';
   S.OBRAS.filter(o=>o.ativa).forEach(o=>{const op=document.createElement('option');op.value=o.id;op.textContent=o.nome;os.appendChild(op);});
-  // Mostrar ecrã home (screen0) — o encarregado escolhe o módulo
-  document.getElementById('enc-home-nome').textContent = S.currentUser?.nome?.split(' ')[0] || 'Encarregado';
-  document.getElementById('enc-screen0').style.display='flex';
-  document.getElementById('enc-screen0').style.flexDirection='column';
+  // Reforçar visibilidade (caso algo tenha mudado durante o carregamento)
+  document.getElementById('enc-screen0').style.cssText='display:flex;flex:1;flex-direction:column';
   document.getElementById('enc-screen1').style.display='none';
-  document.getElementById('enc-screen2').style.display='none';
-  document.getElementById('enc-screen-equip').style.display='none';
-  _encUpdateCtxBar();
 }
 
 async function encPassarColaboradores(){
