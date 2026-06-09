@@ -17,15 +17,17 @@ import { stopCombQrScanner } from './enc-combustivel.js';
 
 async function initEnc(){
   // Mostrar home imediatamente (antes das chamadas async ao Supabase)
-  document.getElementById('enc-home-nome').textContent = S.currentUser?.nome?.split(' ')[0] || 'Encarregado';
-  document.getElementById('enc-screen0').style.cssText='display:flex;flex:1;flex-direction:column';
+  const _nomeEl = document.getElementById('enc-home-nome');
+  if (_nomeEl) _nomeEl.textContent = S.currentUser?.nome?.split(' ')[0] || 'Encarregado';
+  document.getElementById('enc-screen0').style.display='flex';
   ['enc-screen-menu-ponto','enc-screen1','enc-screen2','enc-screen-equip',
    'enc-screen-combustivel','enc-screen-comb-deposito','enc-screen-comb-viatura',
    'enc-screen-historico-enc','enc-screen-aluguer','enc-screen-compras-chat']
     .forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
   _encUpdateCtxBar();
-  // Preencher data com hoje
-  document.getElementById('enc-data-sel').value = fmt(new Date());
+  // Preencher data com hoje (campo existe em enc-screen1)
+  const _dataEl = document.getElementById('enc-data-sel');
+  if (_dataEl) _dataEl.value = fmt(new Date());
   // Garantir empresas MOA e colaboradores actualizados (podem ter sido criados após o login)
   await loadEmpresasMOA().catch(e=>console.warn('loadEmpresasMOA:',e));
   await loadColaboradoresMOA().catch(e=>console.warn('loadColaboradoresMOA:',e));
@@ -39,13 +41,15 @@ async function initEnc(){
     const {data:colabs}=await sb.from('colaboradores').select('*').eq('ativo',true).order('numero');
     if(colabs&&colabs.length>0) S.COLABORADORES=colabs.map(c=>({n:c.numero,nome:c.nome,func:c.funcao,ativo:c.ativo}));
   } catch(e){ console.warn('colabs:',e); }
-  // Preencher select de obras
+  // Preencher select de obras (campo existe em enc-screen1)
   const os=document.getElementById('enc-obra-sel');
-  os.innerHTML='<option value="">— Selecione uma obra —</option>';
-  S.OBRAS.filter(o=>o.ativa).forEach(o=>{const op=document.createElement('option');op.value=o.id;op.textContent=o.nome;os.appendChild(op);});
+  if(os){
+    os.innerHTML='<option value="">— Selecione uma obra —</option>';
+    S.OBRAS.filter(o=>o.ativa).forEach(o=>{const op=document.createElement('option');op.value=o.id;op.textContent=o.nome;os.appendChild(op);});
+  }
   // Reforçar visibilidade (caso algo tenha mudado durante o carregamento)
-  document.getElementById('enc-screen0').style.cssText='display:flex;flex:1;flex-direction:column';
-  document.getElementById('enc-screen1').style.display='none';
+  document.getElementById('enc-screen0').style.display='flex';
+  const s1=document.getElementById('enc-screen1'); if(s1) s1.style.display='none';
 }
 
 async function encPassarColaboradores(){
