@@ -169,10 +169,19 @@ async function getPdfjs(){
   if(!_pdfjsPromise) _pdfjsPromise = (async()=>{
     const mod = await import('pdfjs-dist');
     const pdfjs = mod.getDocument ? mod : (mod.default || mod);
+    // Worker real via ?worker (independente do motor). Evita que o pdf.js
+    // tente carregar/avaliar o script do worker — caminho que, em WebKit
+    // (Safari/iOS), cai no "fake worker" em main-thread e rebenta com
+    // "Attempted to assign to readonly property".
     try{
-      const workerUrl = (await import('pdfjs-dist/build/pdf.worker.min.js?url')).default;
-      pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
-    }catch(e){ console.warn('Worker PDF.js não configurado, a usar fallback:', e); }
+      const WorkerCtor = (await import('pdfjs-dist/build/pdf.worker.min.js?worker')).default;
+      pdfjs.GlobalWorkerOptions.workerPort = new WorkerCtor();
+    }catch(e){
+      try{
+        const workerUrl = (await import('pdfjs-dist/build/pdf.worker.min.js?url')).default;
+        pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+      }catch(e2){ console.warn('Worker PDF.js não configurado, a usar fallback:', e2); }
+    }
     window.pdfjsLib = pdfjs;
     return pdfjs;
   })();
