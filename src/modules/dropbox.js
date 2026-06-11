@@ -133,7 +133,7 @@ export function dropboxFatPath(fat, fileName){
   const ext = fileName.includes('.') ? fileName.slice(fileName.lastIndexOf('.')) : '.pdf';
   const safe = s => (s||'').replace(/[^\wÀ-ÿ\-]/g,'_').replace(/_+/g,'_').slice(0,30);
   const name = [safe(fat.fornecedor), safe(fat.nif), safe(fat.numero)||safe(fileName.replace(/\.[^.]+$/,''))].filter(Boolean).join('_');
-  return `/Faturas/${ym}/${name}${ext}`;
+  return `/04_DP/Faturas/${ym}/${name}${ext}`;
 }
 
 // Atualiza o botão Dropbox na UI (se existir)
