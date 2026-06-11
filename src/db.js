@@ -19,7 +19,7 @@ export async function carregarDados() {
     // Obras
     const {data: obras} = await sb.from('obras').select('*').order('nome');
     if (obras) {
-      S.OBRAS = obras.map(o => ({id:o.id, nome:o.nome, local:o.local||'', desc:o.descricao||'', ativa:o.ativa, prazo:o.prazo||null, encarregado_id:o.encarregado_id||null}));
+      S.OBRAS = obras.map(o => ({id:o.id, nome:o.nome, local:o.local||'', desc:o.descricao||'', ativa:o.ativa, prazo:o.prazo||null, encarregado_id:o.encarregado_id||null, diretor_id:o.diretor_id||null}));
     }
     // Empresas MOA e colaboradores
     await R.loadEmpresasMOA?.();

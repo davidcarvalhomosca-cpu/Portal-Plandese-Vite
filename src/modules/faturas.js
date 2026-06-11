@@ -849,8 +849,10 @@ function editarFatura(id){
   const aproBar = document.getElementById('mf-aprovacao-bar');
   if(aproBar){
     const isPending = f.status === 'pendente_aprovacao';
+    const obraFatura = S.OBRAS.find(o=>o.nome===f.centroCusto);
     const canApprove = S.currentUser?.role === 'admin' ||
-      S.OBRAS.find(o=>o.nome===f.centroCusto)?.encarregado_id === S.currentUser?.key;
+      obraFatura?.encarregado_id === S.currentUser?.key ||
+      obraFatura?.diretor_id === S.currentUser?.key;
     aproBar.style.display = (isPending && canApprove) ? 'flex' : 'none';
   }
 

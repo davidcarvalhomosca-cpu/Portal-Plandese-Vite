@@ -14,6 +14,7 @@ export function novaObra(){
   document.getElementById('mo-desc').value='';
   document.getElementById('mo-prazo').value='';
   _populateEncSelect('');
+  _populateDiretorSelect('');
   document.getElementById('modal-obra').classList.add('open');
 }
 
@@ -34,6 +35,7 @@ export function editObra(id){
   document.getElementById('mo-desc').value=o.desc||'';
   document.getElementById('mo-prazo').value=o.prazo||'';
   _populateEncSelect(o.encarregado_id||'');
+  _populateDiretorSelect(o.diretor_id||'');
   document.getElementById('modal-obra').classList.add('open');
 }
 
@@ -49,17 +51,30 @@ function _populateEncSelect(selectedId=''){
   });
 }
 
+function _populateDiretorSelect(selectedId=''){
+  const sel=document.getElementById('mo-diretor');
+  if(!sel) return;
+  sel.innerHTML='<option value="">— Nenhum —</option>';
+  Object.entries(S.USERS||{}).filter(([,u])=>u.role==='diretor_obra').forEach(([username,u])=>{
+    const op=document.createElement('option');
+    op.value=username; op.textContent=u.nome||username;
+    if(username===selectedId) op.selected=true;
+    sel.appendChild(op);
+  });
+}
+
 export async function saveObra(){
   const nome=document.getElementById('mo-nome').value.trim();if(!nome){alert('Nome obrigatório.');return;}
   const id=document.getElementById('mo-id').value||('obra_'+Date.now());
   const existing=S.OBRAS.findIndex(o=>o.id===id);
   const prazo=document.getElementById('mo-prazo').value||null;
   const encarregado_id=document.getElementById('mo-encarregado').value||null;
-  const rec={id,nome,local:document.getElementById('mo-local').value.trim(),desc:document.getElementById('mo-desc').value.trim(),ativa:true,prazo,encarregado_id};
+  const diretor_id=document.getElementById('mo-diretor').value||null;
+  const rec={id,nome,local:document.getElementById('mo-local').value.trim(),desc:document.getElementById('mo-desc').value.trim(),ativa:true,prazo,encarregado_id,diretor_id};
   try {
     const {error} = await sb.from('obras').upsert({
       id:rec.id, nome:rec.nome, local:rec.local||null, descricao:rec.desc||null, ativa:true,
-      prazo:prazo||null, encarregado_id:encarregado_id||null
+      prazo:prazo||null, encarregado_id:encarregado_id||null, diretor_id:diretor_id||null
     });
     if(error) throw error;
     if(existing>=0)S.OBRAS[existing]={...S.OBRAS[existing],...rec};else S.OBRAS.push(rec);
