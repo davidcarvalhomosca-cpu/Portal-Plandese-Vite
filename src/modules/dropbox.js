@@ -105,6 +105,9 @@ export async function dropboxUpload(file, destPath){
   let token = localStorage.getItem(TOKEN_KEY);
   if(!token) throw new Error('Dropbox não conectada');
 
+  // Converter File/Blob para ArrayBuffer para garantir compatibilidade com Dropbox API
+  const buf = file instanceof ArrayBuffer ? file : await file.arrayBuffer();
+
   const _upload = async (tok) => fetch('https://content.dropboxapi.com/2/files/upload', {
     method: 'POST',
     headers: {
@@ -112,7 +115,7 @@ export async function dropboxUpload(file, destPath){
       'Dropbox-API-Arg': JSON.stringify({ path: destPath, mode: 'add', autorename: true, mute: false }),
       'Content-Type':    'application/octet-stream',
     },
-    body: file,
+    body: buf,
   });
 
   let resp = await _upload(token);

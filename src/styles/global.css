@@ -471,6 +471,7 @@ body.device-mobile .fat-field-row{grid-template-columns:1fr}
   padding:0;
 }
 .fss-field-input::placeholder{color:var(--gray-300);font-weight:400;font-size:12px}
+.fss-field-select{appearance:none;cursor:pointer;color:var(--gray-900)}
 
 .fss-sidebar-footer{padding:12px 16px;border-top:1px solid var(--gray-200);flex-shrink:0;background:var(--white)}
 .fss-learn-note{font-size:11px;color:var(--gray-400);margin-bottom:10px;line-height:1.5}

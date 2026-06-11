@@ -571,6 +571,7 @@ function _fatToRow(f){
     fonte:        f._fonte || 'ocr',
     flags:        f._flags || [],
     dropbox_path: f.dropboxPath || null,
+    centro_custo: f.centroCusto || null,
     criado_por:   S.currentUser?.username || null,
   };
 }
@@ -593,8 +594,9 @@ function _rowToFat(r){
     notas:      r.notas || '',
     _fonte:     r.fonte || 'ocr',
     _flags:     r.flags || [],
-    dropboxPath: r.dropbox_path || '',
-    criadoEm:   r.criado_em || '',
+    dropboxPath:  r.dropbox_path || '',
+    centroCusto:  r.centro_custo || '',
+    criadoEm:     r.criado_em || '',
     _rawText:   '',
   };
 }
@@ -896,14 +898,15 @@ let _fssFat    = null;
 let _fssActive = null; // campo ativo (chave do campo)
 
 const FSS_CAMPOS = [
-  { key:'fornecedor', label:'Fornecedor',   tipo:'text'  },
-  { key:'nif',        label:'NIF',          tipo:'text'  },
-  { key:'numero',     label:'Nº Fatura',    tipo:'text'  },
-  { key:'data',       label:'Data emissão', tipo:'date'  },
-  { key:'base',       label:'Base s/IVA',   tipo:'money' },
-  { key:'iva',        label:'IVA',          tipo:'money' },
-  { key:'total',      label:'Total',        tipo:'money' },
-  { key:'dataPag',    label:'Dt. pagamento',tipo:'date'  },
+  { key:'fornecedor',   label:'Fornecedor',       tipo:'text'  },
+  { key:'nif',          label:'NIF',              tipo:'text'  },
+  { key:'numero',       label:'Nº Fatura',        tipo:'text'  },
+  { key:'data',         label:'Data emissão',     tipo:'date'  },
+  { key:'base',         label:'Base s/IVA',       tipo:'money' },
+  { key:'iva',          label:'IVA',              tipo:'money' },
+  { key:'total',        label:'Total',            tipo:'money' },
+  { key:'dataPag',      label:'Dt. pagamento',    tipo:'date'  },
+  { key:'centroCusto',  label:'Centro de Custo',  tipo:'obra'  },
 ];
 
 function openFatSel(fat, item){
@@ -985,6 +988,22 @@ function fssRenderFields(){
   wrap.innerHTML = FSS_CAMPOS.map(f=>{
     const val = _fssFat[f.key];
     const display = (val!=null && val!=='') ? String(val) : '';
+
+    if(f.tipo === 'obra'){
+      const opts = ['<option value="">— Selecionar obra —</option>',
+        ...S.OBRAS.filter(o=>o.ativa).map(o=>{
+          const sel = display===o.nome ? ' selected' : '';
+          return `<option value="${o.nome.replace(/"/g,'&quot;')}"${sel}>${o.nome}</option>`;
+        })
+      ].join('');
+      return `<div class="fss-field-row${display?' has-val':''}" data-campo="${f.key}" onclick="fssSetActive('${f.key}')">
+        <div class="fss-field-label"><span class="fss-field-dot"></span>${f.label}</div>
+        <select id="fss-input-${f.key}" class="fss-field-input fss-field-select"
+          onchange="_fssFatInputChange('${f.key}',this.value)"
+          onclick="event.stopPropagation();fssSetActive('${f.key}')">${opts}</select>
+      </div>`;
+    }
+
     return `<div class="fss-field-row${display?' has-val':''}" data-campo="${f.key}" onclick="fssSetActive('${f.key}')">
       <div class="fss-field-label"><span class="fss-field-dot"></span>${f.label}</div>
       <input id="fss-input-${f.key}" class="fss-field-input"
