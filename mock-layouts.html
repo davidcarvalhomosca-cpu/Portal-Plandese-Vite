@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mock — Layouts Encarregado</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:#e8edf2;
+  min-height:100vh;
+  padding:40px 24px 60px;
+}
+
+/* ── PAGE HEADER ── */
+.page-title{
+  text-align:center;
+  font-size:22px;font-weight:700;color:#111827;
+  margin-bottom:6px;
+}
+.page-sub{
+  text-align:center;font-size:14px;color:#6b7280;margin-bottom:40px;
+}
+.badge{
+  display:inline-block;padding:2px 10px;border-radius:20px;
+  font-size:11px;font-weight:600;letter-spacing:.4px;
+  background:#111827;color:white;margin:0 4px;vertical-align:middle;
+}
+
+/* ── LAYOUT COLUMNS ── */
+.cols{display:flex;gap:48px;justify-content:center;align-items:flex-start;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;align-items:center;gap:16px;flex:1;min-width:280px;max-width:380px}
+.col-label{
+  font-size:13px;font-weight:700;color:#374151;letter-spacing:.6px;text-transform:uppercase;
+  display:flex;align-items:center;gap:8px;
+}
+.col-label-badge{
+  font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;
+  background:#2563eb;color:white;letter-spacing:.3px;text-transform:none;
+}
+.col-desc{
+  font-size:12.5px;color:#6b7280;text-align:center;line-height:1.55;
+  max-width:280px;
+}
+
+/* ── PHONE FRAME ── */
+.phone{
+  width:320px;
+  background:#f4f6f9;
+  border-radius:36px;
+  overflow:hidden;
+  box-shadow:
+    0 0 0 8px #1f2937,
+    0 0 0 10px #374151,
+    0 24px 60px rgba(0,0,0,.35);
+  position:relative;
+}
+/* notch */
+.phone::before{
+  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:100px;height:24px;background:#1f2937;border-radius:0 0 18px 18px;
+  z-index:10;
+}
+
+/* ── APP BAR ── */
+.app-bar{
+  background:white;
+  height:52px;
+  display:flex;align-items:center;
+  padding:0 14px;gap:10px;
+  border-bottom:1px solid #e5e7eb;
+  position:relative;z-index:5;
+  margin-top:24px; /* space for notch */
+}
+.app-bar.compact{height:46px}
+.ab-logo{
+  width:30px;height:30px;background:#f0f2f5;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  border:1px solid #e5e7eb;
+}
+.ab-logo svg{width:18px;height:18px;color:#2563eb}
+.ab-info{flex:1;min-width:0}
+.ab-name{font-size:13px;font-weight:700;color:#111827}
+.ab-sub{font-size:10px;color:#9ca3af}
+.ab-btn{
+  padding:5px 10px;background:#f3f4f6;border:1px solid #e5e7eb;
+  border-radius:7px;font-size:11px;font-weight:600;color:#374151;
+  white-space:nowrap;
+}
+
+/* ── SCREEN BODY ── */
+.screen{background:#f4f6f9;min-height:580px}
+
+/* ── CONTEXT BAR (new) ── */
+.ctx-bar{
+  background:white;border-bottom:1px solid #f0f0f0;
+  padding:10px 14px;display:flex;align-items:center;justify-content:space-between;
+}
+.ctx-date{font-size:12px;font-weight:600;color:#374151}
+.ctx-time{font-size:12px;color:#9ca3af}
+.ctx-status{
+  display:flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:600;
+  padding:3px 9px;border-radius:20px;
+}
+.ctx-status.ok{background:#f0fdf4;color:#16a34a}
+.ctx-status.pending{background:#fff7ed;color:#ea580c}
+.ctx-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* ══════════════════════════════
+   OPÇÃO A — Grid 2x2
+══════════════════════════════ */
+
+/* Section label */
+.sec-label{
+  font-size:10px;font-weight:700;color:#9ca3af;letter-spacing:.8px;
+  text-transform:uppercase;padding:12px 14px 6px;
+}
+
+/* Primary grid 2×2 */
+.grid-primary{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:8px;padding:0 12px;
+}
+.tile-big{
+  background:white;border-radius:14px;border:1px solid #e8eaed;
+  padding:16px 14px;cursor:pointer;text-align:left;
+  display:flex;flex-direction:column;gap:10px;
+  transition:background .12s;min-height:100px;
+}
+.tile-big:hover{background:#fafafa}
+.tile-icon{
+  width:40px;height:40px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+}
+.tile-icon svg{width:20px;height:20px}
+.tile-icon.blue{background:#eff6ff;color:#2563eb}
+.tile-icon.purple{background:#f5f3ff;color:#7c3aed}
+.tile-label{font-size:12.5px;font-weight:700;color:#111827;line-height:1.3}
+.tile-done{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:10px;font-weight:600;color:#16a34a;
+  background:#f0fdf4;border-radius:10px;padding:2px 6px;width:fit-content;
+}
+.tile-done svg{width:10px;height:10px}
+
+/* Secondary row */
+.row-secondary{
+  display:flex;gap:7px;padding:0 12px;
+}
+.tile-small{
+  flex:1;background:white;border-radius:12px;border:1px solid #e8eaed;
+  padding:12px 8px;cursor:pointer;text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+  transition:background .12s;
+}
+.tile-small:hover{background:#fafafa}
+.tile-small .tile-icon{width:34px;height:34px;border-radius:9px}
+.tile-small .tile-icon svg{width:17px;height:17px}
+.tile-icon.orange{background:#fff7ed;color:#ea580c}
+.tile-icon.red{background:#fef2f2;color:#dc2626}
+.tile-icon.green{background:#f0fdf4;color:#16a34a}
+.tile-small-label{font-size:10.5px;font-weight:600;color:#374151;line-height:1.2}
+
+/* ══════════════════════════════
+   OPÇÃO B — Lista com hierarquia
+══════════════════════════════ */
+
+.list-section{padding:10px 12px 4px}
+.list-section-title{
+  font-size:10px;font-weight:700;color:#9ca3af;letter-spacing:.8px;
+  text-transform:uppercase;margin-bottom:8px;padding-left:2px;
+}
+
+.card-primary{
+  background:white;border-radius:14px;border:1px solid #e8eaed;
+  padding:0;cursor:pointer;
+  display:flex;align-items:center;gap:0;
+  transition:background .12s;overflow:hidden;
+  margin-bottom:8px;
+}
+.card-primary:hover{background:#fafafa}
+.card-accent{width:4px;align-self:stretch;flex-shrink:0}
+.card-accent.blue{background:#2563eb}
+.card-accent.purple{background:#7c3aed}
+.card-primary-inner{
+  display:flex;align-items:center;gap:12px;
+  padding:16px 14px;flex:1;
+}
+.card-big-icon{
+  width:48px;height:48px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.card-big-icon svg{width:24px;height:24px}
+.card-info{flex:1;min-width:0}
+.card-title{font-size:14px;font-weight:700;color:#111827}
+.card-desc{font-size:11px;color:#9ca3af;margin-top:2px;line-height:1.4}
+.card-arrow{color:#d1d5db}
+.card-arrow svg{width:18px;height:18px}
+
+/* Secondary compact cards */
+.row-compact{display:flex;gap:7px}
+.card-compact{
+  flex:1;background:white;border-radius:12px;border:1px solid #e8eaed;
+  padding:12px 10px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:flex-start;gap:8px;
+  transition:background .12s;
+}
+.card-compact:hover{background:#fafafa}
+.card-compact .tile-icon{width:32px;height:32px;border-radius:8px}
+.card-compact .tile-icon svg{width:16px;height:16px}
+.card-compact-label{font-size:11px;font-weight:600;color:#374151}
+.card-compact-sub{font-size:10px;color:#9ca3af;margin-top:1px;line-height:1.3}
+
+/* ── ANNOTATIONS ── */
+.annotations{width:320px;display:flex;flex-direction:column;gap:8px}
+.ann{
+  display:flex;align-items:flex-start;gap:8px;
+  background:white;border-radius:10px;padding:10px 12px;
+  border:1px solid #e8eaed;
+}
+.ann-icon{
+  width:22px;height:22px;border-radius:6px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;margin-top:1px;
+}
+.ann-icon.plus{background:#f0fdf4;color:#16a34a}
+.ann-icon.info{background:#eff6ff;color:#2563eb}
+.ann-text{font-size:11.5px;color:#374151;line-height:1.45}
+.ann-text strong{color:#111827;font-weight:700}
+
+/* ── DIVIDER ── */
+.divider{
+  width:1px;background:#d1d5db;align-self:stretch;
+  display:none;
+}
+@media(min-width:720px){.divider{display:block}}
+
+/* ── VS BADGE ── */
+.vs{
+  font-size:13px;font-weight:700;color:#9ca3af;
+  text-align:center;padding:8px 0;
+}
+
+</style>
+</head>
+<body>
+
+<div class="page-title">Propostas de Layout — Portal do Encarregado</div>
+<div class="page-sub">Dois conceitos para melhorar acessibilidade e velocidade de uso no campo</div>
+
+<div class="cols">
+
+  <!-- ══════════ OPÇÃO A ══════════ -->
+  <div class="col">
+    <div class="col-label">Opção A <span class="col-label-badge">Grid</span></div>
+    <div class="col-desc">Acesso direto às 2 tarefas principais em tiles grandes. Módulos secundários numa faixa compacta em baixo.</div>
+
+    <div class="phone">
+      <!-- App bar -->
+      <div class="app-bar compact">
+        <div class="ab-logo">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <div class="ab-info">
+          <div class="ab-name">João Silva</div>
+        </div>
+        <div class="ab-btn">Sair</div>
+      </div>
+
+      <div class="screen">
+        <!-- Context bar -->
+        <div class="ctx-bar">
+          <div>
+            <div class="ctx-date">Segunda, 9 de Junho</div>
+            <div class="ctx-time">08:42</div>
+          </div>
+          <div class="ctx-status pending">
+            <div class="ctx-dot"></div>
+            Ponto não registado
+          </div>
+        </div>
+
+        <!-- Primary grid -->
+        <div class="sec-label">Folhas de Ponto</div>
+        <div class="grid-primary">
+          <div class="tile-big">
+            <div class="tile-icon blue">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+            </div>
+            <div class="tile-label">MO<br>Plandese</div>
+          </div>
+          <div class="tile-big">
+            <div class="tile-icon purple">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            </div>
+            <div class="tile-label">MO<br>Aluguer</div>
+          </div>
+        </div>
+
+        <!-- Secondary row -->
+        <div class="sec-label" style="margin-top:10px">Outros módulos</div>
+        <div class="row-secondary">
+          <div class="tile-small">
+            <div class="tile-icon orange">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4z"/></svg>
+            </div>
+            <div class="tile-small-label">Equipa-<br>mentos</div>
+          </div>
+          <div class="tile-small">
+            <div class="tile-icon red">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.77 7.23l.01-.01-3.72-3.72-1.41 1.42 2.71 2.71c-.97.365-1.66 1.29-1.66 2.37 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1.5v5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V9c0-.69-.28-1.32-.73-1.77z"/></svg>
+            </div>
+            <div class="tile-small-label">Combus-<br>tível</div>
+          </div>
+          <div class="tile-small">
+            <div class="tile-icon green">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.1 17 7 17h11v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12L8.1 13h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 20 4H5.21l-.94-2H1z"/></svg>
+            </div>
+            <div class="tile-small-label">Compras</div>
+          </div>
+        </div>
+
+        <!-- Histórico -->
+        <div style="padding:10px 12px 0">
+          <div style="background:white;border-radius:12px;border:1px solid #e8eaed;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer">
+            <div class="tile-icon green" style="width:32px;height:32px;border-radius:8px">
+              <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9z"/></svg>
+            </div>
+            <div style="flex:1">
+              <div style="font-size:12px;font-weight:600;color:#374151">Histórico de registos</div>
+            </div>
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;color:#d1d5db"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+          </div>
+        </div>
+
+      </div><!-- /screen -->
+    </div><!-- /phone -->
+
+    <div class="annotations">
+      <div class="ann">
+        <div class="ann-icon plus">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px"><path d="M12 4v16m-8-8h16"/></svg>
+        </div>
+        <div class="ann-text"><strong>1 toque menos</strong> — MO Plandese e Aluguer direto na home, sem sub-menu</div>
+      </div>
+      <div class="ann">
+        <div class="ann-icon plus">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px"><path d="M12 4v16m-8-8h16"/></svg>
+        </div>
+        <div class="ann-text"><strong>Barra de contexto</strong> — data, hora e estado do ponto de hoje visíveis de imediato</div>
+      </div>
+      <div class="ann">
+        <div class="ann-icon info">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+        </div>
+        <div class="ann-text">Tiles secundários mais compactos — menos destaque para módulos de uso esporádico</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ OPÇÃO B ══════════ -->
+  <div class="col">
+    <div class="col-label">Opção B <span class="col-label-badge" style="background:#7c3aed">Lista</span></div>
+    <div class="col-desc">Cards com hierarquia visual clara e touch targets maiores. Acento colorido lateral identifica o módulo rapidamente.</div>
+
+    <div class="phone">
+      <!-- App bar -->
+      <div class="app-bar compact">
+        <div class="ab-logo">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <div class="ab-info">
+          <div class="ab-name">João Silva</div>
+        </div>
+        <div class="ab-btn">Sair</div>
+      </div>
+
+      <div class="screen">
+        <!-- Context bar -->
+        <div class="ctx-bar">
+          <div>
+            <div class="ctx-date">Segunda, 9 de Junho</div>
+            <div class="ctx-time">08:42</div>
+          </div>
+          <div class="ctx-status ok">
+            <div class="ctx-dot"></div>
+            Ponto registado
+          </div>
+        </div>
+
+        <!-- Primary cards -->
+        <div class="list-section">
+          <div class="list-section-title">Folhas de Ponto</div>
+
+          <div class="card-primary">
+            <div class="card-accent blue"></div>
+            <div class="card-primary-inner">
+              <div class="card-big-icon blue" style="background:#eff6ff;color:#2563eb">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+              </div>
+              <div class="card-info">
+                <div class="card-title">MO Plandese</div>
+                <div class="card-desc">Presenças da equipa Plandese</div>
+                <div class="tile-done" style="margin-top:5px">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                  Registado hoje
+                </div>
+              </div>
+              <div class="card-arrow"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg></div>
+            </div>
+          </div>
+
+          <div class="card-primary">
+            <div class="card-accent purple"></div>
+            <div class="card-primary-inner">
+              <div class="card-big-icon" style="background:#f5f3ff;color:#7c3aed">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+              </div>
+              <div class="card-info">
+                <div class="card-title">MO Aluguer</div>
+                <div class="card-desc">Trabalhadores cedidos por empresa externa</div>
+              </div>
+              <div class="card-arrow"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg></div>
+            </div>
+          </div>
+
+          <div class="card-primary" style="margin-bottom:0">
+            <div class="card-accent" style="background:#6b7280"></div>
+            <div class="card-primary-inner">
+              <div class="card-big-icon" style="background:#f9fafb;color:#6b7280">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9z"/></svg>
+              </div>
+              <div class="card-info">
+                <div class="card-title" style="color:#374151">Histórico</div>
+                <div class="card-desc">Consultar registos anteriores</div>
+              </div>
+              <div class="card-arrow"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Secondary compact -->
+        <div class="list-section" style="padding-top:14px">
+          <div class="list-section-title">Outros</div>
+          <div class="row-compact">
+            <div class="card-compact">
+              <div class="tile-icon orange" style="width:32px;height:32px;border-radius:8px">
+                <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px"><path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4z"/></svg>
+              </div>
+              <div class="card-compact-label">Equipamentos</div>
+              <div class="card-compact-sub">Registar QR</div>
+            </div>
+            <div class="card-compact">
+              <div class="tile-icon red" style="width:32px;height:32px;border-radius:8px">
+                <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px"><path d="M19.77 7.23l.01-.01-3.72-3.72-1.41 1.42 2.71 2.71c-.97.365-1.66 1.29-1.66 2.37 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1.5v5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V9c0-.69-.28-1.32-.73-1.77z"/></svg>
+              </div>
+              <div class="card-compact-label">Combustível</div>
+              <div class="card-compact-sub">Abastecimento</div>
+            </div>
+            <div class="card-compact">
+              <div class="tile-icon green" style="width:32px;height:32px;border-radius:8px">
+                <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.1 17 7 17h11v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12L8.1 13h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 20 4H5.21l-.94-2H1z"/></svg>
+              </div>
+              <div class="card-compact-label">Compras</div>
+              <div class="card-compact-sub">Solicitar</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /screen -->
+    </div><!-- /phone -->
+
+    <div class="annotations">
+      <div class="ann">
+        <div class="ann-icon plus">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px"><path d="M12 4v16m-8-8h16"/></svg>
+        </div>
+        <div class="ann-text"><strong>Touch targets maiores</strong> — cards primários com ~68px de altura, fácil de tocar com luvas</div>
+      </div>
+      <div class="ann">
+        <div class="ann-icon plus">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px"><path d="M12 4v16m-8-8h16"/></svg>
+        </div>
+        <div class="ann-text"><strong>Estado em tempo real</strong> — "Registado hoje" com checkmark verde no próprio card</div>
+      </div>
+      <div class="ann">
+        <div class="ann-icon info">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+        </div>
+        <div class="ann-text">Acento colorido lateral — identificação visual rápida sem ler o texto</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /cols -->
+
+<div style="text-align:center;margin-top:48px;padding:24px;background:white;border-radius:16px;max-width:700px;margin-left:auto;margin-right:auto;border:1px solid #e8eaed">
+  <div style="font-size:14px;font-weight:700;color:#111827;margin-bottom:8px">Melhorias comuns a ambas as opções</div>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
+    <span style="background:#f3f4f6;color:#374151;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px">App bar 46px (−8px)</span>
+    <span style="background:#f3f4f6;color:#374151;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px">Data/hora sempre visível</span>
+    <span style="background:#f3f4f6;color:#374151;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px">Estado do ponto hoje</span>
+    <span style="background:#f3f4f6;color:#374151;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px">Sem sub-menu Folhas de Ponto</span>
+    <span style="background:#f3f4f6;color:#374151;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px">Fonte 14-15px nos cards</span>
+    <span style="background:#f3f4f6;color:#374151;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px">Hierarquia primário vs. secundário</span>
+  </div>
+</div>
+
+</body>
+</html>
