@@ -546,6 +546,91 @@ async function carregarTemplatesFaturas(){
       data.forEach(r=>{ FAT_TEMPLATES[r.nif] = { nif:r.nif, fornecedor:r.fornecedor||'', campos:r.campos||{}, exemplos:r.exemplos||0 }; });
     }
   } catch(e){ console.warn('Erro ao carregar templates de fatura:', e); }
+  await carregarFaturas();
+}
+
+// ═══════════════════════════════════════
+//  PERSISTÊNCIA SUPABASE — tabela faturas
+// ═══════════════════════════════════════
+function _fatToRow(f){
+  return {
+    id:           f._dbId || undefined,
+    fornecedor:   f.fornecedor || null,
+    nif:          f.nif || null,
+    numero:       f.numero || null,
+    data:         f.data || null,
+    data_pag:     f.dataPag || null,
+    base:         f.base ?? null,
+    iva:          f.iva ?? null,
+    total:        f.total ?? null,
+    status:       f.status || 'extraida',
+    confianca:    f.confianca ?? null,
+    ficheiro:     f.ficheiro || null,
+    notas:        f.notas || null,
+    fonte:        f._fonte || 'ocr',
+    flags:        f._flags || [],
+    dropbox_path: f.dropboxPath || null,
+    criado_por:   S.currentUser?.username || null,
+  };
+}
+
+function _rowToFat(r){
+  return {
+    id:         ++_fatSeq,
+    _dbId:      r.id,
+    fornecedor: r.fornecedor || '',
+    nif:        r.nif || '',
+    numero:     r.numero || '',
+    data:       r.data || '',
+    dataPag:    r.data_pag || '',
+    base:       r.base != null ? Number(r.base) : null,
+    iva:        r.iva  != null ? Number(r.iva)  : null,
+    total:      r.total != null ? Number(r.total) : null,
+    status:     r.status || 'extraida',
+    confianca:  r.confianca != null ? Number(r.confianca) : 0,
+    ficheiro:   r.ficheiro || '',
+    notas:      r.notas || '',
+    _fonte:     r.fonte || 'ocr',
+    _flags:     r.flags || [],
+    dropboxPath: r.dropbox_path || '',
+    criadoEm:   r.criado_em || '',
+    _rawText:   '',
+  };
+}
+
+export async function carregarFaturas(){
+  try{
+    const { data, error } = await sb.from('faturas')
+      .select('*').order('criado_em', { ascending: false }).limit(500);
+    if(error) throw error;
+    if(data){
+      FATURAS = data.map(_rowToFat);
+      renderFaturas(); atualizaKPIs();
+    }
+  } catch(e){ console.warn('Erro ao carregar faturas:', e); }
+}
+
+async function sbSaveFatura(f){
+  try{
+    const row = _fatToRow(f);
+    if(f._dbId){
+      // Atualizar registo existente
+      const { error } = await sb.from('faturas').update(row).eq('id', f._dbId);
+      if(error) throw error;
+    } else {
+      // Inserir novo
+      const { data, error } = await sb.from('faturas').insert(row).select('id').single();
+      if(error) throw error;
+      f._dbId = data.id;
+    }
+  } catch(e){ console.warn('Erro ao guardar fatura:', e); }
+}
+
+async function sbDeleteFatura(dbId){
+  if(!dbId) return;
+  try{
+    await sb.from('faturas').delete().eq('id', dbId);
+  } catch(e){ console.warn('Erro ao apagar fatura:', e); }
 }
 
 function matchValor(texto, patterns){
@@ -767,6 +852,7 @@ function saveFatura(){
   if(f.confianca<0.99) f.confianca = Math.min(0.99, (f.confianca||0.7)+0.15);
   // Aprende com a confirmação do utilizador — memória do fornecedor por NIF
   aprenderTemplate(f);
+  sbSaveFatura(f);
   closeModal('modal-fat');
   renderFaturas();
   flashAlert('fat-alert');
@@ -776,6 +862,8 @@ function saveFatura(){
 function apagarFatura(){
   const id = parseInt(document.getElementById('mf-id').value,10);
   if(!confirm('Apagar esta fatura?')) return;
+  const fat = FATURAS.find(f=>f.id===id);
+  if(fat) sbDeleteFatura(fat._dbId);
   FATURAS = FATURAS.filter(f=>f.id!==id);
   closeModal('modal-fat');
   renderFaturas();
@@ -949,9 +1037,10 @@ async function fssSave(){
   // Aprender com a confirmação
   aprenderTemplate(_fssFat);
 
-  // Adicionar à lista e fechar
+  // Adicionar à lista, persistir e fechar
   FATURAS.push(_fssFat);
   renderFaturas(); atualizaKPIs();
+  await sbSaveFatura(_fssFat);
   showToast(validaNIF(_fssFat.nif)
     ? `${_fssItem?.name||'Fatura'}: guardada e memória do fornecedor atualizada`
     : `${_fssItem?.name||'Fatura'}: guardada`);
@@ -1036,7 +1125,7 @@ export {
   handleFatFiles, renderFaturas, limparFatFiltros, renderQueue,
   editarFatura, saveFatura, apagarFatura, exportFaturasXLSX,
   setupFatDropzone, atualizaKPIs, seedFaturasDemo,
-  carregarTemplatesFaturas,
+  carregarTemplatesFaturas, carregarFaturas,
   validaNIF, coerenciaTotais,
   openFatSel, fssClose, fssSetActive, fssTextClick, fssSave,
   _fssFatInputChange,
