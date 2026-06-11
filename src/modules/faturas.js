@@ -599,7 +599,7 @@ function _rowToFat(r){
   };
 }
 
-export async function carregarFaturas(){
+async function carregarFaturas(){
   try{
     const { data, error } = await sb.from('faturas')
       .select('*').order('criado_em', { ascending: false }).limit(500);
