@@ -124,15 +124,10 @@ async function processQueueItem(item){
 
     item.progress = 92; renderQueue();
     const fat = extractInvoiceFields(texto, item);
-    FATURAS.push(fat);
 
     item.status='done'; item.progress=100; renderQueue();
-    renderFaturas(); atualizaKPIs();
-    const detetados = countCamposDetetados(fat);
-    showToast(fat._fonte==='memoria'
-      ? `${item.name}: fornecedor reconhecido — preenchido da memória`
-      : `${item.name}: ${detetados}/5 campos · fornecedor novo, confirme para ensinar`);
-    setTimeout(()=>{ FAT_QUEUE = FAT_QUEUE.filter(q=>q.id!==item.id); renderQueue(); }, 4000);
+    // Abrir anotador visual em vez de adicionar diretamente
+    openFatSel(fat, item);
   } catch(e){
     console.error('Erro processamento fatura:', e);
     item.status='error'; item.error = e.message || 'Erro ao processar';
@@ -805,11 +800,244 @@ function exportFaturasXLSX(){
 }
 
 // ═══════════════════════════════════════
+//  ANOTADOR VISUAL DE FATURAS
+// ═══════════════════════════════════════
+let _fssItem   = null;
+let _fssFat    = null;
+let _fssActive = null; // campo ativo (chave do campo)
+
+const FSS_CAMPOS = [
+  { key:'fornecedor', label:'Fornecedor',   tipo:'text'  },
+  { key:'nif',        label:'NIF',          tipo:'text'  },
+  { key:'numero',     label:'Nº Fatura',    tipo:'text'  },
+  { key:'data',       label:'Data emissão', tipo:'date'  },
+  { key:'base',       label:'Base s/IVA',   tipo:'money' },
+  { key:'iva',        label:'IVA',          tipo:'money' },
+  { key:'total',      label:'Total',        tipo:'money' },
+  { key:'dataPag',    label:'Dt. pagamento',tipo:'date'  },
+];
+
+function openFatSel(fat, item){
+  _fssFat    = { ...fat };
+  _fssItem   = item;
+  _fssActive = null;
+
+  const el = document.getElementById('fss-filename');
+  if(el) el.textContent = item.name;
+
+  const badge = document.getElementById('fss-source-badge');
+  if(badge) badge.textContent = fat._fonte === 'memoria'
+    ? `✓ Fornecedor reconhecido (${fat._exemplos} fatura${fat._exemplos===1?'':'s'} aprendida${fat._exemplos===1?'':'s'})`
+    : 'Fornecedor novo — confirme os campos para ensinar';
+
+  const note = document.getElementById('fss-learn-note');
+  if(note) note.textContent = fat._fonte === 'memoria'
+    ? 'Verifique os valores. Ao guardar, a memória deste fornecedor é reforçada.'
+    : 'Clique num campo, depois clique no texto da fatura. Ao guardar, o agente aprende este layout.';
+
+  fssRenderFields();
+  renderFatSelPages(item);
+  fssSetActive('fornecedor');
+
+  const modal = document.getElementById('modal-fat-sel');
+  if(modal) modal.style.display = 'flex';
+}
+
+function fssClose(){
+  const modal = document.getElementById('modal-fat-sel');
+  if(modal) modal.style.display = 'none';
+  // Remover o item da queue
+  if(_fssItem) { FAT_QUEUE = FAT_QUEUE.filter(q=>q.id!==_fssItem.id); renderQueue(); }
+  _fssItem = null; _fssFat = null; _fssActive = null;
+}
+
+function fssSetActive(campo){
+  _fssActive = campo;
+  document.querySelectorAll('.fss-field-row').forEach(r=>{
+    r.classList.toggle('active', r.dataset.campo === campo);
+  });
+  const def = FSS_CAMPOS.find(f=>f.key===campo);
+  const hint = document.getElementById('fss-hint');
+  if(hint && def) hint.textContent = `Clique no texto da fatura para preencher "${def.label}"`;
+}
+
+function fssTextClick(text, span){
+  if(!_fssActive || !_fssFat || !text.trim()) return;
+
+  // Remove seleção anterior para este campo
+  document.querySelectorAll(`.fss-span[data-campo="${_fssActive}"]`).forEach(s=>{
+    s.classList.remove('fss-selected'); s.removeAttribute('data-campo');
+  });
+  span.classList.add('fss-selected');
+  span.dataset.campo = _fssActive;
+
+  // Parse valor conforme tipo do campo
+  const def = FSS_CAMPOS.find(f=>f.key===_fssActive);
+  let val = text.trim();
+  if(def?.tipo==='money'){
+    const n = parseEuro(val);
+    if(n!=null) val = n; else val = text.trim();
+  } else if(def?.tipo==='date'){
+    const d = parseData(val); if(d) val = d;
+  }
+  _fssFat[_fssActive] = val;
+
+  const input = document.getElementById(`fss-input-${_fssActive}`);
+  if(input){ input.value = val!=null ? String(val) : ''; input.closest('.fss-field-row')?.classList.add('has-val'); }
+
+  // Avançar para o próximo campo automaticamente
+  const idx = FSS_CAMPOS.findIndex(f=>f.key===_fssActive);
+  if(idx>=0 && idx<FSS_CAMPOS.length-1) fssSetActive(FSS_CAMPOS[idx+1].key);
+}
+
+function fssRenderFields(){
+  const wrap = document.getElementById('fss-fields');
+  if(!wrap||!_fssFat) return;
+  wrap.innerHTML = FSS_CAMPOS.map(f=>{
+    const val = _fssFat[f.key];
+    const display = (val!=null && val!=='') ? String(val) : '';
+    return `<div class="fss-field-row${display?' has-val':''}" data-campo="${f.key}" onclick="fssSetActive('${f.key}')">
+      <div class="fss-field-label"><span class="fss-field-dot"></span>${f.label}</div>
+      <input id="fss-input-${f.key}" class="fss-field-input"
+        value="${display.replace(/"/g,'&quot;')}"
+        placeholder="${f.tipo==='money'?'0,00':f.tipo==='date'?'aaaa-mm-dd':'—'}"
+        oninput="_fssFatInputChange('${f.key}',this.value)"
+        onclick="event.stopPropagation();fssSetActive('${f.key}')"/>
+    </div>`;
+  }).join('');
+}
+
+function _fssFatInputChange(campo, value){
+  if(!_fssFat) return;
+  _fssFat[campo] = value;
+  const row = document.querySelector(`.fss-field-row[data-campo="${campo}"]`);
+  if(row) row.classList.toggle('has-val', !!value.trim());
+}
+
+async function fssSave(){
+  if(!_fssFat) return;
+
+  // Sincronizar todos os inputs para _fssFat
+  FSS_CAMPOS.forEach(f=>{
+    const input = document.getElementById(`fss-input-${f.key}`);
+    if(!input) return;
+    const v = input.value.trim();
+    if(f.tipo==='money'){
+      const n = parseEuro(v);
+      _fssFat[f.key] = n!=null ? n : (v ? parseFloat(v.replace(',','.')) || null : null);
+    } else {
+      _fssFat[f.key] = v || (f.tipo==='date' ? '' : '');
+    }
+  });
+
+  // Derivar campos em falta
+  const {base, iva, total} = _fssFat;
+  if(base==null && total!=null && iva!=null) _fssFat.base  = Math.round((total-iva)*100)/100;
+  if(total==null && base!=null && iva!=null) _fssFat.total = Math.round((base+iva)*100)/100;
+  if(iva==null && total!=null && base!=null) _fssFat.iva   = Math.round((total-base)*100)/100;
+
+  // Re-avaliar flags e confiança
+  _fssFat._flags = [];
+  if(!validaNIF(_fssFat.nif)) _fssFat._flags.push('invalid_nif');
+  if(!coerenciaTotais(_fssFat.base, _fssFat.iva, _fssFat.total)) _fssFat._flags.push('totals_mismatch');
+  _fssFat.status = (_fssFat._flags.length===0) ? 'extraida' : 'rever';
+  const det = countCamposDetetados(_fssFat);
+  _fssFat.confianca = Math.min(0.99, 0.55 + (det/5)*0.45);
+  // Confirmação manual → confiança alta
+  if(det>=4 && _fssFat._flags.length===0) _fssFat.confianca = 0.97;
+
+  // Aprender com a confirmação
+  aprenderTemplate(_fssFat);
+
+  // Adicionar à lista e fechar
+  FATURAS.push(_fssFat);
+  renderFaturas(); atualizaKPIs();
+  showToast(validaNIF(_fssFat.nif)
+    ? `${_fssItem?.name||'Fatura'}: guardada e memória do fornecedor atualizada`
+    : `${_fssItem?.name||'Fatura'}: guardada`);
+  R.emitEvent?.({ acao:'Fatura inserida: '+(_fssFat.fornecedor||'')+(_fssFat.total?' · '+_fssFat.total+'€':''), seccao:'faturas' });
+  fssClose();
+}
+
+async function renderFatSelPages(item){
+  const container = document.getElementById('fss-pages');
+  if(!container) return;
+  container.innerHTML = '<div style="padding:30px;color:#999;font-size:13px;text-align:center">A renderizar fatura…</div>';
+
+  try{
+    const isPDF = /\.pdf$/i.test(item.name)||item._file.type==='application/pdf';
+    const isImg = /\.(jpe?g|png)$/i.test(item.name);
+    container.innerHTML = '';
+
+    if(isPDF){
+      const pdfjsLib = await getPdfjs();
+      const buf = await item._file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+
+      for(let p=1;p<=pdf.numPages;p++){
+        const page = await pdf.getPage(p);
+        const scale = 1.5;
+        const vp = page.getViewport({scale});
+
+        const canvas = document.createElement('canvas');
+        canvas.width = vp.width; canvas.height = vp.height;
+        await page.render({canvasContext:canvas.getContext('2d'), viewport:vp}).promise;
+
+        // Overlay de texto clicável
+        const layer = document.createElement('div');
+        layer.className = 'fss-text-layer';
+
+        const tc = await page.getTextContent();
+        tc.items.forEach(ti=>{
+          if(!ti.str.trim()) return;
+          const [,,,d,e,f] = ti.transform;
+          const x  = e * scale;
+          const y  = vp.height - f * scale;
+          const fh = Math.max(8, Math.abs(d)*scale);
+
+          const span = document.createElement('span');
+          span.className = 'fss-span';
+          span.textContent = ti.str;
+          span.title = ti.str.trim();
+          span.style.cssText = `left:${x}px;top:${y-fh}px;font-size:${fh}px;`;
+          span.addEventListener('click', ()=>fssTextClick(ti.str.trim(), span));
+          layer.appendChild(span);
+        });
+
+        const wrap = document.createElement('div');
+        wrap.className = 'fss-page-wrap';
+        wrap.appendChild(canvas); wrap.appendChild(layer);
+        container.appendChild(wrap);
+
+        if(p<pdf.numPages){
+          const sep=document.createElement('div');
+          sep.className='fss-page-sep';
+          sep.textContent=`— Página ${p+1} —`;
+          container.appendChild(sep);
+        }
+      }
+    } else if(isImg){
+      const url = URL.createObjectURL(item._file);
+      const img = document.createElement('img');
+      img.src=url; img.style.cssText='max-width:100%;border-radius:4px;box-shadow:0 2px 12px rgba(0,0,0,.18)';
+      img.onload=()=>URL.revokeObjectURL(url);
+      container.appendChild(img);
+      const msg=document.createElement('div');
+      msg.style.cssText='padding:12px;color:#999;font-size:12px;text-align:center;';
+      msg.textContent='Imagem: preencha os campos manualmente no painel à direita.';
+      container.appendChild(msg);
+    }
+  } catch(e){
+    container.innerHTML=`<div style="padding:20px;color:var(--red);font-size:13px">Erro ao renderizar: ${e.message}</div>`;
+  }
+}
 
 export {
   handleFatFiles, renderFaturas, limparFatFiltros, renderQueue,
   editarFatura, saveFatura, apagarFatura, exportFaturasXLSX,
   setupFatDropzone, atualizaKPIs, seedFaturasDemo,
   carregarTemplatesFaturas,
-  validaNIF, coerenciaTotais
+  validaNIF, coerenciaTotais,
+  openFatSel, fssClose, fssSetActive, fssTextClick, fssSave,
+  _fssFatInputChange,
 };

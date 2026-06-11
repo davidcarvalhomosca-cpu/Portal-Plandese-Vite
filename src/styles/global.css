@@ -372,6 +372,109 @@ tbody tr:last-child td{border-bottom:none}
 body.device-mobile .fat-field-row{grid-template-columns:1fr}
 
 /* ─────────────────────────────────────────────────────
+   ANOTADOR VISUAL DE FATURAS (fss = fat-sel)
+───────────────────────────────────────────────────── */
+.fss-wrap{
+  display:flex;flex-direction:column;width:100%;max-width:1400px;
+  margin:0 auto;background:var(--white);border-radius:var(--radius-xl);
+  overflow:hidden;height:calc(100vh - 32px);margin:16px;
+  box-shadow:var(--shadow-lg);
+}
+.fss-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;border-bottom:1px solid var(--gray-200);
+  background:var(--white);flex-shrink:0;gap:16px;flex-wrap:wrap;
+}
+.fss-head-title{font-size:15px;font-weight:700;color:var(--gray-900)}
+.fss-head-file{font-size:12px;color:var(--gray-400);margin-top:2px;font-family:'DM Mono',monospace}
+.fss-hint{font-size:12px;color:var(--blue-500);background:var(--blue-50);
+  border:1px solid var(--blue-200);border-radius:6px;padding:5px 10px;max-width:360px}
+
+.fss-body{display:flex;flex:1;overflow:hidden;min-height:0}
+
+/* Painel esquerdo — fatura renderizada */
+.fss-preview{
+  flex:1;overflow:auto;background:#f0f0f0;padding:16px;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+}
+.fss-pages{display:flex;flex-direction:column;align-items:center;gap:4px}
+
+.fss-page-wrap{
+  position:relative;display:inline-block;
+  box-shadow:0 2px 12px rgba(0,0,0,.18);border-radius:2px;overflow:hidden;
+}
+.fss-page-wrap canvas{display:block}
+
+/* Text overlay: spans invisíveis mas clicáveis sobre o canvas */
+.fss-text-layer{
+  position:absolute;inset:0;pointer-events:none;
+  overflow:hidden;line-height:1;user-select:none;
+}
+.fss-span{
+  position:absolute;pointer-events:all;cursor:crosshair;
+  color:transparent;white-space:pre;border-radius:2px;
+  transition:background .1s;
+}
+.fss-span:hover{background:rgba(99,91,255,.18);color:transparent}
+.fss-span.fss-selected{background:rgba(99,91,255,.35) !important}
+.fss-span.fss-active-field{background:rgba(99,91,255,.10)}
+
+.fss-page-sep{
+  font-size:11px;color:var(--gray-400);text-align:center;
+  padding:6px 0;letter-spacing:.05em;text-transform:uppercase;
+}
+
+/* Painel direito — campos */
+.fss-sidebar{
+  width:300px;flex-shrink:0;display:flex;flex-direction:column;
+  border-left:1px solid var(--gray-200);background:var(--gray-50);overflow:hidden;
+}
+.fss-sidebar-title{
+  display:flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--gray-500);padding:14px 16px 8px;
+}
+.fss-source-badge{
+  font-size:11px;padding:4px 16px 10px;color:var(--blue-500);
+}
+.fss-fields{flex:1;overflow-y:auto;padding:0 10px 8px}
+
+.fss-field-row{
+  background:var(--white);border:1.5px solid var(--gray-200);
+  border-radius:var(--radius);margin-bottom:6px;padding:8px 10px;
+  cursor:pointer;transition:border-color .15s,box-shadow .15s;
+}
+.fss-field-row:hover{border-color:var(--blue-300)}
+.fss-field-row.active{
+  border-color:var(--blue-500);
+  box-shadow:0 0 0 3px rgba(99,91,255,.12);
+}
+.fss-field-row.has-val .fss-field-dot{background:var(--green)}
+
+.fss-field-label{
+  display:flex;align-items:center;gap:6px;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--gray-500);margin-bottom:4px;
+}
+.fss-field-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--gray-300);flex-shrink:0;transition:background .2s;
+}
+.fss-field-row.active .fss-field-dot{background:var(--blue-500);animation:fss-pulse 1s infinite}
+@keyframes fss-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+.fss-field-input{
+  width:100%;border:none;background:transparent;
+  font-size:13px;font-weight:500;color:var(--gray-900);
+  outline:none;font-family:'Inter',sans-serif;
+  padding:0;
+}
+.fss-field-input::placeholder{color:var(--gray-300);font-weight:400;font-size:12px}
+
+.fss-sidebar-footer{padding:12px 16px;border-top:1px solid var(--gray-200);flex-shrink:0;background:var(--white)}
+.fss-learn-note{font-size:11px;color:var(--gray-400);margin-bottom:10px;line-height:1.5}
+
+/* ─────────────────────────────────────────────────────
    COMPRAS — MÓDULO DE PEDIDOS DE COMPRA
 ───────────────────────────────────────────────────── */
 .cmp-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}

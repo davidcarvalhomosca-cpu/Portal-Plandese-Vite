@@ -2634,6 +2634,45 @@
 </div>
 
 <!-- MODAL FATURA -->
+<!-- MODAL: ANOTADOR VISUAL DE FATURA -->
+<div id="modal-fat-sel" style="display:none;position:fixed;inset:0;z-index:1200;background:rgba(26,31,54,.55);backdrop-filter:blur(4px);align-items:stretch;justify-content:center">
+  <div class="fss-wrap">
+    <div class="fss-head">
+      <div>
+        <div class="fss-head-title">Confirmar campos da fatura</div>
+        <div class="fss-head-file" id="fss-filename"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="fss-hint" id="fss-hint">Clique num campo à direita e depois clique no texto da fatura</div>
+        <button class="btn btn-secondary btn-sm" onclick="fssClose()">✕ Fechar</button>
+      </div>
+    </div>
+    <div class="fss-body">
+      <!-- Esquerda: fatura renderizada com text overlay -->
+      <div class="fss-preview" id="fss-preview">
+        <div id="fss-pages" class="fss-pages"></div>
+      </div>
+      <!-- Direita: campos a preencher -->
+      <div class="fss-sidebar">
+        <div class="fss-sidebar-title">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg>
+          Campos da fatura
+        </div>
+        <div class="fss-source-badge" id="fss-source-badge"></div>
+        <div class="fss-fields" id="fss-fields"></div>
+        <div class="fss-sidebar-footer">
+          <div class="fss-learn-note" id="fss-learn-note"></div>
+          <button class="btn btn-primary" style="width:100%" onclick="fssSave()">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Guardar e Ensinar
+          </button>
+          <button class="btn btn-secondary" style="width:100%;margin-top:6px" onclick="fssClose()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-fat">
   <div class="modal" style="width:560px">
     <div class="modal-title" id="mf-title">Editar fatura</div>
