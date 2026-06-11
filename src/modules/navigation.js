@@ -89,7 +89,6 @@ export async function refreshPortal(){
         'equipamentos':    ()=>R.renderEquipamentos?.(),
         'combustivel':     ()=>R.loadCombustivelAdmin?.(),
         'producao':        ()=>R.renderProdDashboard?.(),
-        'comercial':       ()=>R.renderComercial?.(),
         'permissoes':      ()=>R.renderPermMatrix?.(),
         'fecho-mes':       ()=>R.renderFechoMes?.(),
       };

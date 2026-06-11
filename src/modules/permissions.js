@@ -17,21 +17,18 @@ const ALL_SECTIONS = [
   {id:'colaboradores',      label:'Colaboradores'},
   {id:'utilizadores',       label:'Utilizadores'},
   {id:'fornecedores',       label:'Lista de Fornecedores'},
-  {id:'comercial',          label:'Comercial'},
 ];
 
 const CONFIGURABLE_ROLES = [
   {key:'diretor_obra', label:'Diretor de Obra'},
   {key:'compras',      label:'Compras'},
   {key:'financeiro',   label:'Financeiro'},
-  {key:'comercial',    label:'Comercial'},
 ];
 
 const DEFAULT_PERMISSIONS = {
   diretor_obra: ['painel','historico','semana','compras','faturas','equipamentos','producao','obras','colaboradores'],
   compras:      ['painel','compras'],
   financeiro:   ['painel','faturas','compras'],
-  comercial:    ['painel','comercial'],
 };
 
 const PERM_STORAGE_KEY = 'plandese_role_permissions_v1';

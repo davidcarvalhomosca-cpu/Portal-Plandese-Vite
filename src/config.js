@@ -40,7 +40,6 @@ export const ROLE_LABELS = {
   'diretor_obra':'Diretor de Obra',
   'compras':     'Compras',
   'financeiro':  'Financeiro',
-  'comercial':   'Comercial',
   'encarregado': 'Encarregado'
 };
 
@@ -49,7 +48,6 @@ export const ROLE_ACCESS = {
   'diretor_obra': {sections:['painel','historico','compras','faturas','equipamentos','combustivel','producao','obras','colaboradores','empresas-moa'], default:'painel'},
   'compras':      {sections:['painel','compras'], default:'painel'},
   'financeiro':   {sections:['painel','faturas','compras'], default:'painel'},
-  'comercial':    {sections:['painel','comercial'], default:'painel'},
 };
 
 // Secções que emitem notificações (chave → rótulo legível).
@@ -65,7 +63,6 @@ export const NOTIF_SECTIONS = {
   'colaboradores':'Colaboradores',
   'utilizadores': 'Utilizadores',
   'mapa-ferias':  'Férias',
-  'comercial':    'Comercial',
 };
 
 export const NAV_GROUP_SECTIONS = {
@@ -76,7 +73,6 @@ export const NAV_GROUP_SECTIONS = {
   'log': ['equipamentos','combustivel'],
   'prod':['producao'],
   'def': ['obras','colaboradores','utilizadores','empresas-moa'],
-  'com': ['comercial']
 };
 
 export const TIPOS = ['Presença','Falta Injust.','Falta Just.','Férias'];

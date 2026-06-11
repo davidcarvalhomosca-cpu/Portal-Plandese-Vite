@@ -54,9 +54,6 @@ import { loadEmpresasMOA, loadColaboradoresMOA, addColabMOA, removeColabMOA, ren
 // Produção
 import { initProducao, renderProdDashboard, coGoList, coOpenDetail, renderPrevFat, editPrevFat, savePrevFat, deletePrevFat, deletePrevFatFromDetail, editPrevFatFromDetail, renderAutos, editAuto, saveAuto, deleteAuto, deleteAutoFromDetail, editAutoFromDetail, clearCustoObra, custoDropzoneClick, custoHandleDrop, obraImportCustos, obraCustosHandleDrop, saveObraExtra, toggleAutosMes, toggleCustosPanel } from './modules/producao.js';
 
-// Comercial
-import { initComercial, renderComercial, openModalComercial, closeModalCom, editProposta, saveProposta, deleteProposta } from './modules/comercial.js';
-
 // Admin/Painel
 import { loadPainelConfig, savePainelConfig, renderPainel, buildWidget, openPainelCustomizer, closePainelCustomizer, savePainelCustomizer, painelWChkChange, painelObraChkChange, renderFechoMes, exportFechoMes } from './modules/admin.js';
 
@@ -82,7 +79,7 @@ Object.assign(R, {
   initNotifications, emitEvent,
   renderPainel, renderFaturas, renderCompras, renderObras,
   renderColabs, renderUsers, renderEquipamentos,
-  loadCombustivelAdmin, renderProdDashboard, renderComercial,
+  loadCombustivelAdmin, renderProdDashboard,
   renderFechoMes, applyFilter, renderEmpresasMOA,
   loadEmpresasMOA, loadColaboradoresMOA,
   initCompras, initMOAFilters,
@@ -208,10 +205,6 @@ Object.assign(window, {
   toggleAutosMes, toggleCustosPanel,
   exportSemanaExcel,
 
-  // Comercial
-  openModalComercial, closeModalCom,
-  editProposta, saveProposta, deleteProposta,
-
   // Notificações
   toggleNotifPanel, notifClick, markAllRead,
   renderNotifSubs, toggleNotifSub,
@@ -326,7 +319,6 @@ window.savePerfil = async function () {
     if (id === 'compras')      { populaCmpObras(); renderCompras(); injectMapaCompBtns(); }
     if (id === 'equipamentos') { initEquipamentos(); }
     if (id === 'combustivel')  { _initCombustivelAdmin(); }
-    if (id === 'comercial')    { initComercial(); }
     if (id === 'fecho-mes')    { renderFechoMes(); }
     if (id === 'producao')     { renderProdDashboard(); }
     if (id === 'fornecedores') { sbLoadFornecedores().then(() => renderFornecedores()); }

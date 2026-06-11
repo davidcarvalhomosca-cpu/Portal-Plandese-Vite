@@ -983,16 +983,6 @@
         </button>
       </div>
 
-      <button class="nav-lbl" data-grp="com" onclick="toggleNavGrp('com')" type="button">
-        <span class="nav-lbl-txt">Comercial</span>
-        <svg class="nav-chevron" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
-      </button>
-      <div class="nav-group" data-grp="com">
-        <button class="nav-btn" onclick="goTo('comercial',this)">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-          <span class="nav-label">Painel Comercial</span>
-        </button>
-      </div>
     </aside>
 
     <div class="admin-main">
@@ -2264,50 +2254,6 @@
             <div class="pivot-wrap" id="pivot-table-wrap" style="display:none">
               <table class="pivot-table" id="pivot-table"></table>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- COMERCIAL -->
-      <section id="sec-comercial" class="section">
-        <div class="pg-hdr">
-          <div><div class="pg-title">Painel Comercial</div><div class="pg-sub">Gestão comercial e propostas</div></div>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px">
-          <div class="card" style="padding:16px;border-left:3px solid var(--blue-500)">
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gray-500);margin-bottom:6px">Propostas em curso</div>
-            <div style="font-size:26px;font-weight:700;color:var(--gray-900);font-family:'DM Mono',monospace" id="com-kpi-propostas">—</div>
-          </div>
-          <div class="card" style="padding:16px;border-left:3px solid var(--green)">
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gray-500);margin-bottom:6px">Propostas ganhas</div>
-            <div style="font-size:26px;font-weight:700;color:var(--green);font-family:'DM Mono',monospace" id="com-kpi-ganhas">—</div>
-          </div>
-          <div class="card" style="padding:16px;border-left:3px solid var(--yellow)">
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gray-500);margin-bottom:6px">Em negociação</div>
-            <div style="font-size:26px;font-weight:700;color:var(--yellow);font-family:'DM Mono',monospace" id="com-kpi-neg">—</div>
-          </div>
-          <div class="card" style="padding:16px;border-left:3px solid var(--red)">
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gray-500);margin-bottom:6px">Perdidas</div>
-            <div style="font-size:26px;font-weight:700;color:var(--red);font-family:'DM Mono',monospace" id="com-kpi-perdidas">—</div>
-          </div>
-        </div>
-        <div class="card" style="padding:20px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-            <div style="font-size:13px;font-weight:700;color:var(--gray-900)">Propostas</div>
-            <button class="btn btn-primary btn-sm" onclick="openModalComercial()">
-              <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-              Nova proposta
-            </button>
-          </div>
-          <div class="alert alert-ok" id="com-alert" style="display:none;margin-bottom:10px">Proposta guardada.</div>
-          <div id="com-empty" style="text-align:center;padding:32px;color:var(--gray-400);font-size:13px">
-            <svg viewBox="0 0 24 24" fill="currentColor" style="width:40px;height:40px;color:var(--gray-300);display:block;margin:0 auto 10px"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-            Sem propostas registadas. Adicione a primeira.
-          </div>
-          <div class="table-wrap" id="com-table-wrap" style="display:none">
-            <table class="tbl"><thead><tr>
-              <th>Cliente</th><th>Descrição</th><th>Valor (€)</th><th>Estado</th><th>Data</th><th></th>
-            </tr></thead><tbody id="com-tbody"></tbody></table>
           </div>
         </div>
       </section>
