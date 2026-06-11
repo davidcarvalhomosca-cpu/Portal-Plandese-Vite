@@ -913,7 +913,7 @@ function apagarFatura(){
 // ═══════════════════════════════════════
 //  WORKFLOW DE APROVAÇÃO
 // ═══════════════════════════════════════
-export async function aprovarFatura(){
+async function aprovarFatura(){
   const id = parseInt(document.getElementById('mf-id').value, 10);
   const f = FATURAS.find(x=>x.id===id); if(!f) return;
   if(!confirm(`Aprovar fatura de ${f.fornecedor||'fornecedor'}${f.total?' · '+f.total+'€':''}?`)) return;
@@ -940,7 +940,7 @@ export async function aprovarFatura(){
   R.emitEvent?.({ acao:`Fatura aprovada: ${f.fornecedor||''}${f.total?' · '+f.total+'€':''} (${f.centroCusto||''})`, seccao:'faturas' });
 }
 
-export async function rejeitarFatura(){
+async function rejeitarFatura(){
   const id = parseInt(document.getElementById('mf-id').value, 10);
   const f = FATURAS.find(x=>x.id===id); if(!f) return;
   const motivo = prompt('Motivo da rejeição (opcional):') ?? '';
