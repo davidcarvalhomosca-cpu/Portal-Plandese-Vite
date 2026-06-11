@@ -5,7 +5,7 @@ import { S, R } from '../state.js';
 import { fmt, fmtPT } from '../utils/helpers.js';
 import { showToast, flashAlert, closeModal } from './navigation.js';
 import { sb } from '../supabase.js';
-import { dropboxUpload, dropboxFatPath, dropboxIsConnected } from './dropbox.js';
+import { dropboxUpload, dropboxFatPath, dropboxIsConnected, dropboxGetSharedLink, dropboxMoveFile } from './dropbox.js';
 
 let FATURAS = [];
 let FAT_QUEUE = [];
@@ -57,10 +57,13 @@ function coerenciaTotais(base, iva, total){
 }
 function statusBadge(s){
   switch(s){
-    case 'extraida': return '<span class="badge b-blue">Extraída</span>';
-    case 'rever':    return '<span class="badge b-yellow">A rever</span>';
-    case 'validada': return '<span class="badge b-green">Validada</span>';
-    case 'paga':     return '<span class="badge b-gray">Paga</span>';
+    case 'extraida':           return '<span class="badge b-blue">Extraída</span>';
+    case 'pendente_aprovacao': return '<span class="badge b-orange">⏳ Pendente</span>';
+    case 'aprovada':           return '<span class="badge b-green">✓ Aprovada</span>';
+    case 'rejeitada':          return '<span class="badge b-red">✗ Rejeitada</span>';
+    case 'rever':              return '<span class="badge b-yellow">A rever</span>';
+    case 'validada':           return '<span class="badge b-green">Validada</span>';
+    case 'paga':               return '<span class="badge b-gray">Paga</span>';
     default: return '<span class="badge b-gray">—</span>';
   }
 }
@@ -572,6 +575,9 @@ function _fatToRow(f){
     flags:        f._flags || [],
     dropbox_path: f.dropboxPath || null,
     centro_custo: f.centroCusto || null,
+    ficheiro_url: f.ficheiroUrl || null,
+    aprovado_por: f.aprovadoPor || null,
+    aprovado_em:  f.aprovadoEm  || null,
     criado_por:   S.currentUser?.username || null,
   };
 }
@@ -596,6 +602,9 @@ function _rowToFat(r){
     _flags:     r.flags || [],
     dropboxPath:  r.dropbox_path || '',
     centroCusto:  r.centro_custo || '',
+    ficheiroUrl:  r.ficheiro_url || '',
+    aprovadoPor:  r.aprovado_por || '',
+    aprovadoEm:   r.aprovado_em  || '',
     criadoEm:     r.criado_em || '',
     _rawText:   '',
   };
@@ -817,6 +826,34 @@ function editarFatura(id){
   if(elSub) elSub.textContent = f._fonte==='memoria'
     ? `Fornecedor reconhecido — preenchido da memória (${f._exemplos||0} ${f._exemplos===1?'fatura':'faturas'}). Corrija se necessário; o sistema reaprende.`
     : 'Fornecedor novo — confirme os campos. Ao guardar, o sistema aprende para as próximas faturas deste fornecedor.';
+
+  // Centro de custo
+  const elCC = document.getElementById('mf-centro-custo');
+  if(elCC) elCC.textContent = f.centroCusto || '—';
+
+  // PDF preview
+  const previewWrap = document.getElementById('mf-pdf-preview');
+  if(previewWrap){
+    if(f.ficheiroUrl){
+      previewWrap.innerHTML = `<a href="${f.ficheiroUrl}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" style="display:inline-flex;gap:6px;align-items:center">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 16h8v2H8v-2zm0-4h8v2H8v-2z"/></svg>
+        Ver Fatura (PDF)
+      </a>`;
+      previewWrap.style.display = 'block';
+    } else {
+      previewWrap.style.display = 'none';
+    }
+  }
+
+  // Botões de aprovação — visíveis só para pendente_aprovacao
+  const aproBar = document.getElementById('mf-aprovacao-bar');
+  if(aproBar){
+    const isPending = f.status === 'pendente_aprovacao';
+    const canApprove = S.currentUser?.role === 'admin' ||
+      S.OBRAS.find(o=>o.nome===f.centroCusto)?.encarregado_id === S.currentUser?.key;
+    aproBar.style.display = (isPending && canApprove) ? 'flex' : 'none';
+  }
+
   validaCamposModal();
   document.getElementById('modal-fat').classList.add('open');
   ['mf-nif','mf-base','mf-iva','mf-total'].forEach(id=>{
@@ -871,6 +908,50 @@ function apagarFatura(){
   closeModal('modal-fat');
   renderFaturas();
   showToast('Fatura apagada');
+}
+
+// ═══════════════════════════════════════
+//  WORKFLOW DE APROVAÇÃO
+// ═══════════════════════════════════════
+export async function aprovarFatura(){
+  const id = parseInt(document.getElementById('mf-id').value, 10);
+  const f = FATURAS.find(x=>x.id===id); if(!f) return;
+  if(!confirm(`Aprovar fatura de ${f.fornecedor||'fornecedor'}${f.total?' · '+f.total+'€':''}?`)) return;
+
+  f.status     = 'aprovada';
+  f.aprovadoPor = S.currentUser?.nome || S.currentUser?.key || 'admin';
+  f.aprovadoEm  = new Date().toISOString();
+
+  // Mover ficheiro no Dropbox para pasta de aprovadas
+  if(dropboxIsConnected() && f.dropboxPath){
+    try{
+      const novoPath = dropboxFatPath(f, f.ficheiro || (f.dropboxPath.split('/').pop()), true);
+      const movedPath = await dropboxMoveFile(f.dropboxPath, novoPath);
+      f.dropboxPath = movedPath || novoPath;
+      const sharedUrl = await dropboxGetSharedLink(f.dropboxPath);
+      if(sharedUrl) f.ficheiroUrl = sharedUrl;
+    } catch(e){ console.warn('Dropbox move erro:', e); }
+  }
+
+  await sbSaveFatura(f);
+  renderFaturas(); atualizaKPIs();
+  closeModal('modal-fat');
+  showToast(`Fatura aprovada${f.centroCusto?' — enviada para '+f.centroCusto:''}`);
+  R.emitEvent?.({ acao:`Fatura aprovada: ${f.fornecedor||''}${f.total?' · '+f.total+'€':''} (${f.centroCusto||''})`, seccao:'faturas' });
+}
+
+export async function rejeitarFatura(){
+  const id = parseInt(document.getElementById('mf-id').value, 10);
+  const f = FATURAS.find(x=>x.id===id); if(!f) return;
+  const motivo = prompt('Motivo da rejeição (opcional):') ?? '';
+  if(motivo === null) return;
+  f.status = 'rejeitada';
+  f.notas  = motivo ? `[Rejeitada] ${motivo}` : '[Rejeitada]';
+  await sbSaveFatura(f);
+  renderFaturas(); atualizaKPIs();
+  closeModal('modal-fat');
+  showToast('Fatura rejeitada');
+  R.emitEvent?.({ acao:`Fatura rejeitada: ${f.fornecedor||''} (${f.centroCusto||''})`, seccao:'faturas' });
 }
 
 // ═══════════════════════════════════════
@@ -1057,6 +1138,9 @@ async function fssSave(){
   // Aprender com a confirmação
   aprenderTemplate(_fssFat);
 
+  // Se tem centro de custo → entra no fluxo de aprovação
+  if(_fssFat.centroCusto) _fssFat.status = 'pendente_aprovacao';
+
   // Adicionar à lista, persistir e fechar
   FATURAS.push(_fssFat);
   renderFaturas(); atualizaKPIs();
@@ -1065,24 +1149,40 @@ async function fssSave(){
   // Upload Dropbox (se ligado e ficheiro disponível)
   if(dropboxIsConnected() && _fssItem?._file){
     try{
-      const path = dropboxFatPath(_fssFat, _fssItem.name);
+      const path = dropboxFatPath(_fssFat, _fssItem.name, false);
       const dbxPath = await dropboxUpload(_fssItem._file, path);
       _fssFat.dropboxPath = dbxPath;
-      sbSaveFatura(_fssFat);
-      showToast(`${_fssItem.name}: guardada + enviada para Dropbox`);
+      // Gerar link partilhado para pré-visualização no portal
+      const sharedUrl = await dropboxGetSharedLink(dbxPath);
+      if(sharedUrl) _fssFat.ficheiroUrl = sharedUrl;
+      await sbSaveFatura(_fssFat);
     } catch(e){
-      console.warn('Dropbox upload:', e);
-      showToast(validaNIF(_fssFat.nif)
-        ? `${_fssItem?.name||'Fatura'}: guardada e memória do fornecedor atualizada (Dropbox falhou)`
-        : `${_fssItem?.name||'Fatura'}: guardada (Dropbox falhou)`);
+      console.error('Dropbox upload erro:', e);
     }
-  } else {
-    showToast(validaNIF(_fssFat.nif)
-      ? `${_fssItem?.name||'Fatura'}: guardada e memória do fornecedor atualizada`
-      : `${_fssItem?.name||'Fatura'}: guardada`);
   }
 
-  R.emitEvent?.({ acao:'Fatura inserida: '+(_fssFat.fornecedor||'')+(_fssFat.total?' · '+_fssFat.total+'€':''), seccao:'faturas' });
+  // Notificação
+  if(_fssFat.centroCusto){
+    const obra = S.OBRAS.find(o=>o.nome===_fssFat.centroCusto);
+    const encUsername = obra?.encarregado_id;
+    const msg = `Fatura pendente de aprovação: ${_fssFat.fornecedor||''}${_fssFat.total?' · '+_fssFat.total+'€':''} (${_fssFat.centroCusto})`;
+    R.emitEvent?.({ acao: msg, seccao:'faturas' });
+    // Notificação direta ao diretor de obra
+    if(encUsername && encUsername !== S.currentUser?.key){
+      try{
+        await sb.from('notificacoes').insert({
+          actor: S.currentUser?.key||null,
+          actor_nome: S.currentUser?.nome||'Sistema',
+          acao: msg, seccao:'faturas', destinatario: encUsername
+        });
+      } catch(e){ console.warn('Notif encarregado:', e); }
+    }
+    showToast(`Fatura enviada para aprovação — ${_fssFat.centroCusto}`);
+  } else {
+    R.emitEvent?.({ acao:'Fatura inserida: '+(_fssFat.fornecedor||'')+(_fssFat.total?' · '+_fssFat.total+'€':''), seccao:'faturas' });
+    showToast(validaNIF(_fssFat.nif) ? `${_fssItem?.name||'Fatura'}: guardada e fornecedor memorizado` : `${_fssItem?.name||'Fatura'}: guardada`);
+  }
+
   fssClose();
 }
 
@@ -1167,4 +1267,5 @@ export {
   validaNIF, coerenciaTotais,
   openFatSel, fssClose, fssSetActive, fssTextClick, fssSave,
   _fssFatInputChange,
+  aprovarFatura, rejeitarFatura,
 };

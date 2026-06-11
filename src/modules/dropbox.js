@@ -130,13 +130,69 @@ export async function dropboxUpload(file, destPath){
   return result.path_display;
 }
 
-export function dropboxFatPath(fat, fileName){
+export function dropboxFatPath(fat, fileName, aprovada = false){
   const d   = fat.data || new Date().toISOString().slice(0,10);
   const ym  = d.slice(0,7);
   const ext = fileName.includes('.') ? fileName.slice(fileName.lastIndexOf('.')) : '.pdf';
   const safe = s => (s||'').replace(/[^\wÀ-ÿ\-]/g,'_').replace(/_+/g,'_').slice(0,30);
   const name = [safe(fat.fornecedor), safe(fat.nif), safe(fat.numero)||safe(fileName.replace(/\.[^.]+$/,''))].filter(Boolean).join('_');
+  if(aprovada && fat.centroCusto){
+    return `/04_DP/${safe(fat.centroCusto)}/Faturas_Aprovadas/${ym}/${name}${ext}`;
+  }
+  if(fat.centroCusto){
+    return `/04_DP/${safe(fat.centroCusto)}/Faturas_Pendentes/${ym}/${name}${ext}`;
+  }
   return `/04_DP/Faturas/${ym}/${name}${ext}`;
+}
+
+export async function dropboxGetSharedLink(path){
+  let token = localStorage.getItem(TOKEN_KEY);
+  if(!token) return null;
+  try{
+    let resp = await fetch('https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path, settings: { requested_visibility: { '.tag': 'public' } } }),
+    });
+    if(resp.status === 401){
+      const ok = await _refreshToken();
+      if(!ok) return null;
+      token = localStorage.getItem(TOKEN_KEY);
+      resp = await fetch('https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path, settings: { requested_visibility: { '.tag': 'public' } } }),
+      });
+    }
+    if(resp.status === 409){
+      // Link já existe — extrair do body
+      const err = await resp.json();
+      return err?.error?.shared_link_already_exists?.metadata?.url?.replace('?dl=0','?dl=1') || null;
+    }
+    if(!resp.ok) return null;
+    const data = await resp.json();
+    return data.url?.replace('?dl=0','?dl=1') || null;
+  } catch{ return null; }
+}
+
+export async function dropboxMoveFile(fromPath, toPath){
+  let token = localStorage.getItem(TOKEN_KEY);
+  if(!token) throw new Error('Dropbox não conectada');
+  const _move = async (tok) => fetch('https://api.dropboxapi.com/2/files/move_v2', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${tok}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from_path: fromPath, to_path: toPath, autorename: true }),
+  });
+  let resp = await _move(token);
+  if(resp.status === 401){
+    const ok = await _refreshToken();
+    if(!ok){ localStorage.removeItem(TOKEN_KEY); throw new Error('Sessão Dropbox expirada'); }
+    token = localStorage.getItem(TOKEN_KEY);
+    resp = await _move(token);
+  }
+  if(!resp.ok) throw new Error('Dropbox move falhou: ' + await resp.text());
+  const data = await resp.json();
+  return data.metadata?.path_display;
 }
 
 // Atualiza o botão Dropbox na UI (se existir)

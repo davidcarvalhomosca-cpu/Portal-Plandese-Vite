@@ -2701,12 +2701,36 @@
     <div class="field"><label>Estado</label>
       <select id="mf-status">
         <option value="extraida">Extraída</option>
+        <option value="pendente_aprovacao">Pendente aprovação</option>
+        <option value="aprovada">Aprovada</option>
+        <option value="rejeitada">Rejeitada</option>
         <option value="rever">A rever</option>
         <option value="validada">Validada</option>
         <option value="paga">Paga</option>
       </select>
     </div>
     <div class="field"><label>Notas</label><textarea id="mf-notas" style="resize:vertical;min-height:50px;width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:'Inter',sans-serif;font-size:13px" placeholder="Observações..."></textarea></div>
+
+    <!-- Centro de custo + link PDF -->
+    <div style="display:flex;align-items:center;gap:12px;margin-top:8px;flex-wrap:wrap">
+      <div style="font-size:12px;color:var(--gray-500)">Centro de custo: <strong id="mf-centro-custo" style="color:var(--gray-700)">—</strong></div>
+      <div id="mf-pdf-preview" style="display:none"></div>
+    </div>
+
+    <!-- Barra de aprovação (só visível para faturas pendentes) -->
+    <div id="mf-aprovacao-bar" style="display:none;margin-top:14px;padding:14px 16px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;gap:10px;align-items:center;flex-wrap:wrap">
+      <svg viewBox="0 0 24 24" fill="#16a34a" style="width:20px;height:20px;flex-shrink:0"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+      <span style="font-size:13px;font-weight:600;color:#15803d;flex:1">Fatura pendente de aprovação</span>
+      <button class="btn btn-sm" style="background:#16a34a;color:#fff;border:none" onclick="aprovarFatura()">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        Aprovar
+      </button>
+      <button class="btn btn-sm" style="background:#fff;color:#dc2626;border:1.5px solid #fca5a5" onclick="rejeitarFatura()">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        Rejeitar
+      </button>
+    </div>
+
     <details style="margin-top:8px">
       <summary style="cursor:pointer;font-size:12px;color:var(--gray-500);user-select:none">Ver texto bruto extraído (debug)</summary>
       <pre id="mf-rawtext" style="margin-top:6px;max-height:180px;overflow:auto;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:6px;padding:8px;font-size:11px;font-family:monospace;white-space:pre-wrap;word-break:break-word"></pre>

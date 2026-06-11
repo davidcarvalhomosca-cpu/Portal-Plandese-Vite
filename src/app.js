@@ -28,7 +28,7 @@ import { initNotifications, emitEvent, renderNotifPanel, notifClick, toggleNotif
 import { renderNotifSubs, toggleNotifSub } from './modules/notif-subs.js';
 
 // Faturas
-import { handleFatFiles, renderFaturas, limparFatFiltros, editarFatura, saveFatura, apagarFatura, exportFaturasXLSX, setupFatDropzone, atualizaKPIs, seedFaturasDemo, carregarTemplatesFaturas, carregarFaturas, openFatSel, fssClose, fssSetActive, fssTextClick, fssSave, _fssFatInputChange } from './modules/faturas.js';
+import { handleFatFiles, renderFaturas, limparFatFiltros, editarFatura, saveFatura, apagarFatura, exportFaturasXLSX, setupFatDropzone, atualizaKPIs, seedFaturasDemo, carregarTemplatesFaturas, carregarFaturas, openFatSel, fssClose, fssSetActive, fssTextClick, fssSave, _fssFatInputChange, aprovarFatura, rejeitarFatura } from './modules/faturas.js';
 
 // Compras
 import { renderCompras, editarCompra, saveCompra, apagarCompra, exportComprasXLSX, abrirMapaPicker, fecharMapaPicker, geocodeSearch, confirmarLocalizacao, limparLocalizacao, cmpRenderArtPicker, cmpAddArtigo, cmpRemoveArtigo, cmpUpdateArtigoQty, cmpAddForn, cmpRemoveForn, initCompras, atualizaKPIsCompras, populaCmpObras } from './modules/compras.js';
@@ -147,6 +147,7 @@ Object.assign(window, {
   // Faturas
   handleFatFiles, renderFaturas, limparFatFiltros,
   editarFatura, saveFatura, apagarFatura, exportFaturasXLSX, carregarFaturas,
+  aprovarFatura, rejeitarFatura,
   // Anotador visual
   openFatSel, fssClose, fssSetActive, fssTextClick, fssSave, _fssFatInputChange,
 
