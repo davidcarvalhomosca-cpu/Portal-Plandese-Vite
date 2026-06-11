@@ -7,7 +7,7 @@ const REFRESH_KEY  = 'dbx_refresh';
 const VERIFIER_KEY = 'dbx_verifier';
 
 function _redirectUri(){
-  return window.location.origin + window.location.pathname;
+  return window.location.origin;
 }
 
 function _b64url(buf){
