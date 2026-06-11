@@ -1547,3 +1547,56 @@ tbody tr:hover td{background:rgba(37,99,235,.035)}
 .btn-primary:hover,.btn-login:hover{filter:brightness(1.06);background:var(--grad-brand)}
 .btn-success{background:var(--grad-brand)}
 .btn-success:hover{filter:brightness(1.06)}
+
+/* ── Top bar refinement: SYNCOP glass look ── */
+.app-bar-inner{height:62px;gap:14px}
+.app-bar-logo{width:38px;height:38px;border-radius:13px}
+.app-bar-name{font-size:15px;font-weight:700;letter-spacing:-.2px}
+.app-bar-right{gap:10px}
+
+/* rounded-square glass icon buttons */
+.notif-btn,.settings-btn{
+  width:40px;height:40px;border-radius:13px;
+  background:rgba(255,255,255,.55);border:1px solid var(--glass-brd);
+  backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  transition:background .15s,box-shadow .15s,transform .1s;
+}
+.notif-btn:hover,.settings-btn:hover{
+  background:rgba(255,255,255,.8);box-shadow:0 4px 14px rgba(37,99,235,.14);transform:translateY(-1px);
+}
+.notif-btn svg,.settings-btn svg{color:var(--blue-600)}
+
+/* glass date pill */
+#admin-app .dw-wrap,#enc-app .dw-wrap{
+  display:flex;align-items:center;
+  padding:7px 14px;border-radius:13px;
+  background:rgba(255,255,255,.55);border:1px solid var(--glass-brd);
+  backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+}
+#admin-app .dw-date,#enc-app .dw-date{
+  border-bottom:none;font-weight:600;color:var(--gray-700);
+}
+#admin-app .dw-date:hover,#enc-app .dw-date:hover{color:var(--blue-600)}
+
+/* gradient rounded-square avatar */
+.app-bar-chip{
+  padding:5px 14px 5px 6px;border-radius:14px;
+  background:rgba(255,255,255,.55);border:1px solid var(--glass-brd);
+  backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+}
+.app-bar-av{
+  width:30px;height:30px;border-radius:10px;
+  background:var(--grad-soft);color:#fff;font-size:11px;
+  box-shadow:0 3px 9px rgba(37,99,235,.35);
+}
+.settings-av{background:var(--grad-soft)!important;color:#fff!important}
+
+/* dark mode top bar */
+body.dark-mode .notif-btn,body.dark-mode .settings-btn,
+body.dark-mode #admin-app .dw-wrap,body.dark-mode #enc-app .dw-wrap,
+body.dark-mode .app-bar-chip{
+  background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.1);
+}
+body.dark-mode .notif-btn:hover,body.dark-mode .settings-btn:hover{background:rgba(255,255,255,.1)}
+body.dark-mode .notif-btn svg,body.dark-mode .settings-btn svg{color:var(--blue-300)}
+body.dark-mode #admin-app .dw-date,body.dark-mode #enc-app .dw-date{color:var(--gray-400)}
