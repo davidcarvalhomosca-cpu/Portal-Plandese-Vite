@@ -31,6 +31,16 @@ export function initAdmin(){
   document.getElementById('nb-colab').textContent=S.COLABORADORES.filter(c=>c.ativo).length;
   R.initCompras?.()?.catch?.(e=>console.warn('initCompras:',e));
   R.initMOAFilters?.()?.catch?.(e=>console.warn('initMOAFilters:',e));
+  // preencher perfil na sidebar
+  const u = S.currentUser;
+  if(u){
+    const av = document.getElementById('sidebar-user-av');
+    const nm = document.getElementById('sidebar-user-name');
+    const rl = document.getElementById('sidebar-user-role');
+    if(av) av.textContent = u.initials || '';
+    if(nm) nm.textContent = u.nome || '';
+    if(rl) rl.textContent = u.role === 'admin' ? 'Administrador' : (u.role || '');
+  }
   goTo('painel',document.getElementById('nav-painel'));
 }
 
