@@ -69,6 +69,9 @@ import { dropboxInit, dropboxLogin, dropboxLogout, dropboxIsConnected } from './
 // Férias
 import { renderMapaFerias, feriasNavAno, feriasTogglePrevista, feriasToggleLock, feriasSetFiltro } from './modules/ferias.js';
 
+// Lembretes (quadro Trello)
+import { renderLembretes, lembretesOpenModal, lembretesCloseModal, lembretesSave, lembretesApagar, lembretesSelectCor, lembretesDragStart, lembretesDragEnd, lembretesDragOver, lembretesDrop } from './modules/lembretes.js';
+
 // ── Registry R — permite que módulos chamem funções de outros módulos sem imports circulares ──
 Object.assign(R, {
   carregarDados,
@@ -229,6 +232,10 @@ Object.assign(window, {
 
   // Férias
   renderMapaFerias, feriasNavAno, feriasTogglePrevista, feriasToggleLock, feriasSetFiltro,
+
+  // Lembretes
+  renderLembretes, lembretesOpenModal, lembretesCloseModal, lembretesSave, lembretesApagar,
+  lembretesSelectCor, lembretesDragStart, lembretesDragEnd, lembretesDragOver, lembretesDrop,
 });
 
 // ── Settings panel ──────────────────────────────────────────────────────────

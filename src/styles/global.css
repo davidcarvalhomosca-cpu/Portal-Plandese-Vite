@@ -1637,4 +1637,118 @@ body.dark-mode .app-bar-chip{
 }
 body.dark-mode .notif-btn:hover,body.dark-mode .settings-btn:hover{background:rgba(255,255,255,.1)}
 body.dark-mode .notif-btn svg,body.dark-mode .settings-btn svg{color:var(--blue-300)}
+
+/* ─────────────────────────────────────────────────────
+   LEMBRETES — Quadro Trello
+───────────────────────────────────────────────────── */
+.lmb-board{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:14px;
+  align-items:start;
+}
+@media(max-width:900px){.lmb-board{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.lmb-board{grid-template-columns:1fr}}
+
+.lmb-col{
+  background:var(--gray-50);
+  border:1px solid var(--gray-200);
+  border-radius:var(--radius-lg);
+  padding:12px;
+  min-height:120px;
+  transition:background .15s,box-shadow .15s;
+}
+.lmb-col.lmb-over{
+  background:var(--blue-50,#eff6ff);
+  border-color:var(--blue-300,#93c5fd);
+  box-shadow:0 0 0 2px rgba(37,99,235,.12);
+}
+
+.lmb-col-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;
+}
+.lmb-col-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.lmb-col-title{font-size:12px;font-weight:700;color:var(--gray-700);text-transform:uppercase;letter-spacing:.5px}
+.lmb-col-count{
+  font-size:11px;font-weight:600;color:var(--gray-400);
+  background:var(--gray-200);border-radius:10px;
+  padding:1px 7px;
+}
+
+.lmb-cards{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+
+.lmb-card{
+  background:var(--white);
+  border:1px solid var(--gray-200);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  cursor:pointer;
+  overflow:hidden;
+  transition:box-shadow .15s,transform .1s,opacity .15s;
+  user-select:none;
+}
+.lmb-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.lmb-card.lmb-dragging{opacity:.45;transform:scale(.97)}
+
+.lmb-card-stripe{height:4px;width:100%}
+.lmb-card-body{padding:10px 12px}
+
+.lmb-card-title{
+  font-size:13px;font-weight:600;color:var(--gray-800);
+  line-height:1.4;margin-bottom:4px;word-break:break-word;
+}
+.lmb-card-desc{
+  font-size:12px;color:var(--gray-500);line-height:1.45;
+  margin-bottom:6px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.lmb-card-meta{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px;
+}
+
+.lmb-prio{
+  font-size:10px;font-weight:700;border-radius:4px;padding:2px 6px;
+}
+.lmb-prazo{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:10px;color:var(--gray-500);font-family:'DM Mono',monospace;
+}
+.lmb-prazo.lmb-vencido{color:var(--red);font-weight:600}
+
+.lmb-avatar{
+  margin-left:auto;
+  width:20px;height:20px;border-radius:50%;
+  background:var(--blue-100);color:var(--blue-700);
+  font-size:9px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+
+.lmb-add-card-btn{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:5px;
+  padding:7px 10px;border:1.5px dashed var(--gray-300);
+  border-radius:var(--radius);background:transparent;cursor:pointer;
+  font-family:'Inter',sans-serif;font-size:12px;color:var(--gray-400);
+  transition:background .15s,border-color .15s,color .15s;
+}
+.lmb-add-card-btn:hover{background:var(--white);border-color:var(--blue-400);color:var(--blue-500)}
+
+/* Seletor de cor no modal */
+.lmb-cor-btn{
+  width:24px;height:24px;border-radius:50%;border:2px solid transparent;
+  cursor:pointer;transition:transform .1s,border-color .1s;
+  display:flex;align-items:center;justify-content:center;font-size:13px;
+}
+.lmb-cor-btn:hover{transform:scale(1.2)}
+.lmb-cor-btn.active{border-color:var(--gray-900);transform:scale(1.15)}
+.lmb-cor-none{font-size:16px;line-height:1;color:var(--gray-500);background:var(--gray-100)!important}
+
+/* dark mode */
+body.dark-mode .lmb-col{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.08)}
+body.dark-mode .lmb-col.lmb-over{background:rgba(37,99,235,.12);border-color:rgba(96,165,250,.4)}
+body.dark-mode .lmb-card{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.08)}
+body.dark-mode .lmb-card-title{color:var(--gray-100)}
+body.dark-mode .lmb-card-desc{color:var(--gray-400)}
+body.dark-mode .lmb-col-title{color:var(--gray-300)}
+body.dark-mode .lmb-add-card-btn{border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.3)}
 body.dark-mode #admin-app .dw-date,body.dark-mode #enc-app .dw-date{color:var(--gray-400)}

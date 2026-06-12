@@ -6,6 +6,7 @@ import { S } from '../state.js';
 import { fmt, fmtPT, getMonday, calcH, fmtH } from '../utils/helpers.js';
 import { MESES_PT } from '../config.js';
 import { showToast } from './navigation.js';
+import { renderLembretes } from './lembretes.js';
 
 let _painelConfig = null;
 
@@ -115,6 +116,9 @@ async function renderPainel() {
   // Construir cada widget
   const htmlWidgets = await Promise.all(widgets.map(wid => buildWidget(wid, obrasFiltro)));
   grid.innerHTML = htmlWidgets.join('');
+
+  // Renderizar quadro de lembretes em paralelo
+  renderLembretes().catch(e => console.warn('renderLembretes:', e));
 }
 
 // ── Construir HTML de cada widget ─────────────────────────────────
