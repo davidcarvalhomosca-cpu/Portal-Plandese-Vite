@@ -16,24 +16,26 @@ let _feriasPrevistas  = new Set(); // 'colab_numero|YYYY-MM-DD' — planeadas, e
 
 const NAME_W = 160;
 const TOT_W  = 52;
+// Fundo dos fins de semana — listras diagonais subtis para realçar
+const WKND_BG = "repeating-linear-gradient(135deg,#E9EDF2 0px,#E9EDF2 3px,#D4DAE3 3px,#D4DAE3 6px)";
 
-// ── Navegação de ano ──────────────────
+// ── Navegação de ano — precisa de novo fetch ──────────────────
 export function feriasNavAno(delta) {
   _ano += delta;
   renderMapaFerias();
 }
 
-// ── Lock / Unlock ─────────────────────
+// ── Lock / Unlock — apenas re-render, sem novo fetch ─────────
 export function feriasToggleLock() {
   _locked = !_locked;
   _applyLockBtn();
-  renderMapaFerias();
+  _renderTabela();
 }
 
-// ── Filtro por função ─────────────────
+// ── Filtro por função — apenas re-render, sem novo fetch ─────
 export function feriasSetFiltro(func) {
   _filtroFunc = (_filtroFunc === func) ? null : func;
-  renderMapaFerias();
+  _renderTabela();
 }
 
 // ── Toggle férias previstas (click na célula) ─────────────────
@@ -85,39 +87,7 @@ function _updateColabRow(colabN) {
       const cell = document.getElementById(`fc-${colabN}-${dateStr}`);
       if (!cell) continue;
 
-      if (isUtil) {
-        cell.style.background = '#10B981';
-        cell.title = `Férias utilizadas — ${d} ${MESES_FULL[m]}`;
-        cell.style.cursor = 'default';
-        cell.onclick = null;
-      } else if (isPrev) {
-        cell.style.background = '#F59E0B';
-        if (_locked) {
-          cell.title = `Férias previstas — ${d} ${MESES_FULL[m]}`;
-          cell.style.cursor = 'default';
-          cell.onclick = null;
-        } else {
-          cell.title = `Férias previstas — ${d} ${MESES_FULL[m]} (clique para remover)`;
-          cell.style.cursor = 'pointer';
-          cell.onclick = () => feriasTogglePrevista(colabN, dateStr);
-        }
-      } else if (isWknd) {
-        cell.style.background = 'var(--gray-100)';
-        cell.title = '';
-        cell.style.cursor = 'default';
-        cell.onclick = null;
-      } else {
-        cell.style.background = '';
-        if (_locked) {
-          cell.title = '';
-          cell.style.cursor = 'default';
-          cell.onclick = null;
-        } else {
-          cell.title = `Clique para marcar férias previstas — ${d} ${MESES_FULL[m]}`;
-          cell.style.cursor = 'pointer';
-          cell.onclick = () => feriasTogglePrevista(colabN, dateStr);
-        }
-      }
+      _styleCell(cell, { isUtil, isPrev, isWknd, d, m, colabN, dateStr });
     }
   }
 
@@ -128,6 +98,40 @@ function _updateColabRow(colabN) {
   if (elUtil) elUtil.innerHTML = _totalBadge(totalUtil, '#065F46', '#D1FAE5');
   const elPrev = document.getElementById(`ft-prev-${colabN}`);
   if (elPrev) elPrev.innerHTML = _totalBadge(totalPrev, '#92400E', '#FEF3C7');
+}
+
+// ── Aplica estilo + handlers a uma célula de dia ──────────────
+function _styleCell(cell, { isUtil, isPrev, isWknd, d, m, colabN, dateStr }) {
+  cell.onclick = null;
+  if (isUtil) {
+    cell.style.background = '#10B981';
+    cell.style.cursor = 'default';
+    cell.title = `Férias utilizadas — ${d} ${MESES_FULL[m]}`;
+  } else if (isPrev) {
+    cell.style.background = '#F59E0B';
+    if (_locked) {
+      cell.style.cursor = 'default';
+      cell.title = `Férias previstas — ${d} ${MESES_FULL[m]}`;
+    } else {
+      cell.style.cursor = 'pointer';
+      cell.title = `Férias previstas — ${d} ${MESES_FULL[m]} (clique para remover)`;
+      cell.onclick = () => feriasTogglePrevista(colabN, dateStr);
+    }
+  } else if (isWknd) {
+    cell.style.background = WKND_BG;
+    cell.style.cursor = 'default';
+    cell.title = '';
+  } else {
+    cell.style.background = '';
+    if (_locked) {
+      cell.style.cursor = 'default';
+      cell.title = '';
+    } else {
+      cell.style.cursor = 'pointer';
+      cell.title = `Clique para marcar férias — ${d} ${MESES_FULL[m]}`;
+      cell.onclick = () => feriasTogglePrevista(colabN, dateStr);
+    }
+  }
 }
 
 function _totalBadge(n, color, bg) {
@@ -158,7 +162,7 @@ function _applyLockBtn() {
   }
 }
 
-// ── Render principal ──────────────────
+// ── Render principal: fetch Supabase + tabela ─────────────────
 export async function renderMapaFerias() {
   const cont = document.getElementById('ferias-cont');
   if (!cont) return;
@@ -196,6 +200,15 @@ export async function renderMapaFerias() {
     return;
   }
 
+  _renderTabela();
+}
+
+// ── Render da tabela a partir dos dados em memória ────────────
+// Chamado por lock/filtro — nunca faz fetch ao Supabase.
+function _renderTabela() {
+  const cont = document.getElementById('ferias-cont');
+  if (!cont) return;
+
   const allColabs = S.COLABORADORES.filter(c => c.ativo).sort((a, b) => a.n - b.n);
   if (!allColabs.length) {
     cont.innerHTML = '<div class="card" style="text-align:center;color:var(--gray-400);padding:32px;font-size:13px">Sem colaboradores ativos.</div>';
@@ -222,7 +235,7 @@ export async function renderMapaFerias() {
   const chipTodos = document.createElement('button');
   chipTodos.style.cssText = chipStyle(!_filtroFunc);
   chipTodos.textContent = 'Todos';
-  chipTodos.onclick = () => { _filtroFunc = null; renderMapaFerias(); };
+  chipTodos.onclick = () => { _filtroFunc = null; _renderTabela(); };
   filtroBar.appendChild(chipTodos);
 
   for (const f of funcs) {
@@ -242,10 +255,10 @@ export async function renderMapaFerias() {
   const table = document.createElement('table');
   table.style.cssText = 'border-collapse:collapse;width:100%;min-width:900px;font-size:12px';
 
-  const stickyTh = (left, extra = '') =>
-    `position:sticky;left:${left}px;background:var(--gray-50);z-index:2;${extra}`;
-  const stickyTd = (left, extra = '') =>
-    `position:sticky;left:${left}px;background:white;z-index:1;${extra}`;
+  const stickyTh = (left) =>
+    `position:sticky;left:${left}px;background:var(--gray-50);z-index:2;`;
+  const stickyTd = (left) =>
+    `position:sticky;left:${left}px;background:white;z-index:1;`;
 
   // Cabeçalho de meses
   let thead = '<thead>';
@@ -273,9 +286,9 @@ export async function renderMapaFerias() {
     for (let d = 1; d <= diasNoMes; d++) {
       const dateObj = new Date(_ano, m, d);
       const isWknd = dateObj.getDay() === 0 || dateObj.getDay() === 6;
-      const bg = isWknd ? 'background:var(--gray-100);' : '';
+      const wkndBg = isWknd ? `background:${WKND_BG};` : '';
       const borderL = d === 1 ? 'border-left:2px solid var(--gray-200)' : 'border-left:1px solid var(--gray-100)';
-      thead += `<th style="padding:3px 0;text-align:center;font-size:9px;font-weight:500;color:var(--gray-400);border-bottom:1px solid var(--gray-200);width:18px;min-width:18px;${bg}${borderL}">${d}</th>`;
+      thead += `<th style="padding:3px 0;text-align:center;font-size:9px;font-weight:500;color:var(--gray-400);border-bottom:1px solid var(--gray-200);width:18px;min-width:18px;${wkndBg}${borderL}">${d}</th>`;
     }
   }
   thead += '</tr>';
@@ -320,13 +333,13 @@ export async function renderMapaFerias() {
             onclickAttr = ` onclick="feriasTogglePrevista(${colab.n},'${dateStr}')"`;
           }
         } else if (isWknd) {
-          bg = 'background:var(--gray-100);';
+          bg = `background:${WKND_BG};`;
           cursorStyle = 'cursor:default;';
         } else {
           if (_locked) {
             cursorStyle = 'cursor:default;';
           } else {
-            titleAttr = ` title="Clique para marcar férias previstas — ${d} ${MESES_FULL[m]}"`;
+            titleAttr = ` title="Clique para marcar férias — ${d} ${MESES_FULL[m]}"`;
             cursorStyle = 'cursor:pointer;';
             onclickAttr = ` onclick="feriasTogglePrevista(${colab.n},'${dateStr}')"`;
           }
@@ -372,7 +385,7 @@ export async function renderMapaFerias() {
       <span style="display:inline-block;width:16px;height:16px;border-radius:3px;background:#F59E0B"></span> Férias previstas
     </div>
     <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gray-500)">
-      <span style="display:inline-block;width:16px;height:16px;border-radius:3px;background:var(--gray-100);border:1px solid var(--gray-200)"></span> Fim de semana
+      <span style="display:inline-block;width:16px;height:16px;border-radius:3px;background:${WKND_BG};border:1px solid var(--gray-200)"></span> Fim de semana
     </div>
   `;
   cont.appendChild(leg);
