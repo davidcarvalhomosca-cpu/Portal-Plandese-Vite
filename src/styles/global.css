@@ -1509,6 +1509,7 @@ hr{border:none;border-top:1px solid var(--gray-100);margin:16px 0}
   border-radius:var(--radius-xl);
   box-shadow:var(--shadow);
   position:relative;
+  overflow:visible;
 }
 #admin-app .app-bar{
   background:rgba(255,255,255,.62);
@@ -1518,6 +1519,9 @@ hr{border:none;border-top:1px solid var(--gray-100);margin:16px 0}
 #admin-app .app-bar-name{color:var(--gray-900)}
 #admin-app .app-bar-sub{color:var(--gray-500)}
 .app-bar-logo{background:var(--grad-brand)!important;box-shadow:0 4px 12px rgba(37,99,235,.4)}
+/* painéis drop-down: reposicionar abaixo da app-bar flutuante (12px margem + 63px altura + 4px gap) */
+.notif-panel{top:79px}
+.settings-panel{top:79px}
 
 /* ── Cards & KPI surfaces: glass ── */
 .card,.balanco-chart-wrap{
