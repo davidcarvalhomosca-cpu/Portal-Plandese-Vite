@@ -655,9 +655,10 @@ body.device-mobile .fat-field-row{grid-template-columns:1fr}
 .enc-sub-title{font-size:15px;font-weight:700;color:var(--gray-900)}
 /* ── Context bar (data/hora + estado ponto) ── */
 .enc-ctx-bar{
-  background:var(--white);border-bottom:1px solid var(--gray-200);
+  background:var(--white);border-top:1px solid var(--gray-200);
   padding:10px clamp(14px,3.5vw,20px);
   display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+  position:sticky;bottom:0;z-index:2;
 }
 .enc-ctx-date{font-size:13px;font-weight:600;color:var(--gray-700)}
 .enc-ctx-time{font-size:11px;color:var(--gray-500);margin-top:1px;display:none}
