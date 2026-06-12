@@ -64,6 +64,7 @@ export let goTo = function(id, btn){
   if(btn) btn.classList.add('active');
   const bnav=document.querySelector('#bottom-nav .bnav-btn[onclick*="\'' + id + '\'"]');
   if(bnav)bnav.classList.add('active');
+  if(id==='painel') closeAllGroups();
   syncNavGroups();
   if(id==='historico') R.applyFilter?.();
   if(id==='empresas-moa') R.renderEmpresasMOA?.();
@@ -102,13 +103,24 @@ export async function refreshPortal(){
   }
 }
 
+function closeAllGroups(){
+  document.querySelectorAll('.sidebar .nav-group').forEach(g=>{
+    g.classList.remove('open');
+    const l=document.querySelector('.nav-lbl[data-grp="'+g.getAttribute('data-grp')+'"]');
+    if(l) l.classList.remove('open');
+  });
+}
+
 export function toggleNavGrp(key){
   const lbl = document.querySelector('.nav-lbl[data-grp="'+key+'"]');
   const grp = document.querySelector('.nav-group[data-grp="'+key+'"]');
   if(!lbl||!grp) return;
   const willOpen = !grp.classList.contains('open');
-  grp.classList.toggle('open', willOpen);
-  lbl.classList.toggle('open', willOpen);
+  closeAllGroups();
+  if(willOpen){
+    grp.classList.add('open');
+    lbl.classList.add('open');
+  }
 }
 
 export function syncNavGroups(){
