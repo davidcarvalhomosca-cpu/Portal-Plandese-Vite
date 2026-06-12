@@ -107,16 +107,6 @@ export function toggleNavGrp(key){
   const grp = document.querySelector('.nav-group[data-grp="'+key+'"]');
   if(!lbl||!grp) return;
   const willOpen = !grp.classList.contains('open');
-  // fecha todos os outros grupos que não têm item ativo
-  if(willOpen){
-    document.querySelectorAll('.sidebar .nav-group.open').forEach(g=>{
-      if(g.getAttribute('data-grp')===key) return;
-      if(g.querySelector('.nav-btn.active')) return;
-      g.classList.remove('open');
-      const l=document.querySelector('.nav-lbl[data-grp="'+g.getAttribute('data-grp')+'"]');
-      if(l) l.classList.remove('open');
-    });
-  }
   grp.classList.toggle('open', willOpen);
   lbl.classList.toggle('open', willOpen);
 }
