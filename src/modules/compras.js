@@ -1005,7 +1005,7 @@ async function initCompras() {
 
 export {
   COMPRAS, sbLoadCompras, sbSaveCompra, sbApagarCompra,
-  renderCompras, filtraCompras, populaCmpObras, cmpSetView,
+  renderCompras, filtraCompras, populaCmpObras,
   editarCompra, saveCompra, apagarCompra, exportComprasXLSX,
   abrirMapaPicker, fecharMapaPicker, geocodeSearch, confirmarLocalizacao, limparLocalizacao,
   cmpRenderArtPicker, cmpAddArtigo, cmpRemoveArtigo, cmpUpdateArtigoQty, cmpAddArtigoRapido,
