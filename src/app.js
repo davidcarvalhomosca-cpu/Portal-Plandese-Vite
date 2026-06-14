@@ -31,7 +31,7 @@ import { renderNotifSubs, toggleNotifSub } from './modules/notif-subs.js';
 import { handleFatFiles, renderFaturas, limparFatFiltros, editarFatura, saveFatura, apagarFatura, exportFaturasXLSX, setupFatDropzone, atualizaKPIs, seedFaturasDemo, carregarTemplatesFaturas, carregarFaturas, openFatSel, fssClose, fssSetActive, fssTextClick, fssSave, _fssFatInputChange, aprovarFatura, rejeitarFatura } from './modules/faturas.js';
 
 // Compras
-import { renderCompras, editarCompra, saveCompra, apagarCompra, exportComprasXLSX, abrirMapaPicker, fecharMapaPicker, geocodeSearch, confirmarLocalizacao, limparLocalizacao, cmpRenderArtPicker, cmpAddArtigo, cmpRemoveArtigo, cmpUpdateArtigoQty, cmpAddForn, cmpRemoveForn, initCompras, atualizaKPIsCompras, populaCmpObras } from './modules/compras.js';
+import { renderCompras, editarCompra, saveCompra, apagarCompra, exportComprasXLSX, abrirMapaPicker, fecharMapaPicker, geocodeSearch, confirmarLocalizacao, limparLocalizacao, cmpRenderArtPicker, cmpAddArtigo, cmpRemoveArtigo, cmpUpdateArtigoQty, cmpAddArtigoRapido, cmpAddForn, cmpRemoveForn, initCompras, atualizaKPIsCompras, populaCmpObras, cmpSetView, abrirListaMateriais, fecharListaMateriais, confirmarListaMateriais, cmpLstRender, cmpLstToggle, cmpLstRemoveSel, lstUpdateQty, cmpUpdateArtBtnBadge, abrirFornPicker, cmpFornPickerRender, cmpSelFornPicker } from './modules/compras.js';
 
 // Equipamentos
 import { renderEquipamentos, openEqModal, editEquipamento, saveEquipamento, apagarEquipamento, refreshEqMap, showQrCode, printQrCode, showEqHistorico, exportEquipamentosXLSX, submitQrRegistration, initEquipamentos, initQrRegistration } from './modules/equipamentos.js';
@@ -153,10 +153,13 @@ Object.assign(window, {
 
   // Compras
   renderCompras, editarCompra, saveCompra, apagarCompra,
-  exportComprasXLSX, abrirMapaPicker, fecharMapaPicker,
+  exportComprasXLSX, cmpSetView, abrirMapaPicker, fecharMapaPicker,
   geocodeSearch, confirmarLocalizacao, limparLocalizacao,
-  cmpRenderArtPicker, cmpAddArtigo, cmpRemoveArtigo, cmpUpdateArtigoQty,
+  cmpRenderArtPicker, cmpAddArtigo, cmpRemoveArtigo, cmpUpdateArtigoQty, cmpAddArtigoRapido,
   cmpAddForn, cmpRemoveForn,
+  abrirListaMateriais, fecharListaMateriais, confirmarListaMateriais,
+  cmpLstRender, cmpLstToggle, cmpLstRemoveSel, lstUpdateQty, cmpUpdateArtBtnBadge,
+  abrirFornPicker, cmpFornPickerRender, cmpSelFornPicker,
 
   // Empresas MOA
   saveEmpresaMOA, editEmpresaMOA, toggleEmpresaMOA,
