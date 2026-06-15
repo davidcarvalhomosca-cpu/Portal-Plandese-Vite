@@ -858,6 +858,299 @@ function uploadListaMapaSecosFile(input) {
   reader.readAsBinaryString(file);
 }
 
+// ─── Upload Proposta Fornecedor (Excel + PDF) ─────────────────
+let _mprItems = [];
+
+function uploadProposta() {
+  const inp = document.getElementById('mmc-upload-proposta-input');
+  if (inp) { inp.value = ''; inp.click(); }
+}
+
+function uploadPropostaFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const isExcel = /\.(xlsx|xls)$/i.test(file.name);
+  const isPDF   = /\.pdf$/i.test(file.name);
+  if (!isExcel && !isPDF) { showToast('Use Excel (.xlsx/.xls) ou PDF'); return; }
+
+  const reader = new FileReader();
+  reader.onload = async function(ev) {
+    try {
+      showToast('A processar proposta…');
+      const propItems = isExcel
+        ? _parsePropExcel(ev.target.result)
+        : await _parsePropPDF(ev.target.result);
+      if (!propItems.length) { showToast('Nenhum item com preço encontrado'); return; }
+      _mprItems = _matchPropostaItems(propItems);
+      _renderMprModal();
+      openModal('modal-proposta-review');
+    } catch(e) {
+      console.warn('Erro ao processar proposta:', e);
+      showToast('Erro ao processar o ficheiro');
+    }
+  };
+  if (isExcel) reader.readAsBinaryString(file);
+  else         reader.readAsArrayBuffer(file);
+}
+
+function _parsePropExcel(binaryStr) {
+  const wb   = XLSX.read(binaryStr, { type: 'binary' });
+  const ws   = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  const norm = h => String(h).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+
+  let headerIdx = -1;
+  for (let i = 0; i < Math.min(rows.length, 15); i++) {
+    const r = rows[i].map(norm);
+    if (r.some(h => h.includes('descri') || h === 'nome' || h.includes('designa') || h.includes('artigo'))) {
+      headerIdx = i; break;
+    }
+  }
+
+  const items = [];
+  if (headerIdx >= 0) {
+    const header   = rows[headerIdx].map(norm);
+    const colDesc  = header.findIndex(h => h.includes('descri') || h === 'nome' || h.includes('designa') || h.includes('artigo'));
+    const colPreco = header.findIndex(h => h.includes('p.u') || h === 'pu' || (h.includes('prec') && !h.includes('total')));
+    const colUn    = header.findIndex(h => h === 'un.' || h === 'un' || h.startsWith('unid'));
+    const colQtd   = header.findIndex(h => h.includes('qtd') || h.includes('quant'));
+    for (let i = headerIdx + 1; i < rows.length; i++) {
+      const row  = rows[i];
+      const desc = colDesc >= 0 ? String(row[colDesc] ?? '').trim() : '';
+      if (!desc || desc.length < 3) continue;
+      let preco = null;
+      if (colPreco >= 0) {
+        preco = parseFloat(String(row[colPreco] ?? '').replace(',', '.')) || null;
+      } else {
+        for (let j = row.length - 1; j >= 1; j--) {
+          const v = parseFloat(String(row[j] ?? '').replace(',', '.'));
+          if (v > 0) { preco = v; break; }
+        }
+      }
+      if (preco == null) continue;
+      items.push({
+        descricao:  desc,
+        preco,
+        unidade:    colUn  >= 0 ? String(row[colUn]  ?? '').trim() : '',
+        quantidade: colQtd >= 0 ? parseFloat(String(row[colQtd] ?? '').replace(',', '.')) || null : null
+      });
+    }
+  } else {
+    for (let i = 0; i < rows.length; i++) {
+      const row  = rows[i];
+      const desc = String(row[0] ?? '').trim();
+      if (!desc || desc.length < 3) continue;
+      let preco = null;
+      for (let j = row.length - 1; j >= 1; j--) {
+        const v = parseFloat(String(row[j] ?? '').replace(',', '.'));
+        if (v > 0) { preco = v; break; }
+      }
+      if (preco == null) continue;
+      items.push({ descricao: desc, preco, unidade: '', quantidade: null });
+    }
+  }
+  return items;
+}
+
+async function _parsePropPDF(arrayBuffer) {
+  if (typeof window.pdfjsLib === 'undefined') {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+  const pdf  = await window.pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+  const tItems = [];
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page    = await pdf.getPage(p);
+    const vp      = page.getViewport({ scale: 1 });
+    const content = await page.getTextContent();
+    content.items.forEach(it => {
+      if (it.str.trim()) tItems.push({ text: it.str, x: it.transform[4], y: vp.height - it.transform[5] });
+    });
+  }
+  tItems.sort((a, b) => a.y - b.y || a.x - b.x);
+
+  // Agrupar em linhas por Y (tolerância 4pt)
+  const linhas = [];
+  let cur = [], curY = null;
+  tItems.forEach(it => {
+    if (curY === null || Math.abs(it.y - curY) < 4) { cur.push(it); if (curY === null) curY = it.y; }
+    else { if (cur.length) linhas.push([...cur]); cur = [it]; curY = it.y; }
+  });
+  if (cur.length) linhas.push(cur);
+
+  const items = [];
+  linhas.forEach(linha => {
+    linha.sort((a, b) => a.x - b.x);
+    const parts = linha.map(i => i.text.trim()).filter(Boolean);
+    if (parts.length < 2) return;
+
+    // Encontrar preço unitário: entre os números da linha, preferir o penúltimo (o último é geralmente o total)
+    const numIdxs = [];
+    parts.forEach((p, i) => {
+      const v = parseFloat(p.replace(/\s/g, '').replace(',', '.'));
+      if (!isNaN(v) && v > 0 && /\d/.test(p)) numIdxs.push({ i, v });
+    });
+    if (!numIdxs.length) return;
+
+    // Se só há 1 número, é o preço; se há 2+, o penúltimo é provavelmente o P.U.
+    const precoEntry = numIdxs.length === 1 ? numIdxs[0] : numIdxs[numIdxs.length - 2];
+    const preco = precoEntry.v;
+    const desc  = parts.slice(0, precoEntry.i).join(' ').trim();
+    if (!desc || desc.length < 3) return;
+    if (/^[A-ZÁÀÂÃÉÊÍÓÔÕÚ\s\.\/]+$/.test(desc) && desc.split(' ').length < 4) return; // header row
+    items.push({ descricao: desc, preco, unidade: '', quantidade: null });
+  });
+  return items;
+}
+
+function _normStr(s) {
+  return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function _matchScore(a, b) {
+  const ta = new Set(_normStr(a).split(' ').filter(t => t.length > 1));
+  const tb = new Set(_normStr(b).split(' ').filter(t => t.length > 1));
+  if (!ta.size || !tb.size) return 0;
+  let common = 0;
+  ta.forEach(t => { if (tb.has(t)) common++; });
+  return common / (new Set([...ta, ...tb]).size);
+}
+
+function _matchPropostaItems(propItems) {
+  return propItems.map(p => {
+    let bestIdx = -1, bestScore = 0;
+    S._mcLinhas.forEach((l, idx) => {
+      const s = _matchScore(p.descricao, l.descricao);
+      if (s > bestScore) { bestScore = s; bestIdx = idx; }
+    });
+    return { ...p, mapaIdx: bestScore >= 0.25 ? bestIdx : -1, score: bestScore, sel: bestScore >= 0.25 };
+  });
+}
+
+function _renderMprModal() {
+  const sel = document.getElementById('mpr-forn-sel');
+  if (sel) {
+    sel.innerHTML = S._mcFornecedores.length
+      ? S._mcFornecedores.map(f => `<option value="${f.nome}">${f.nome}</option>`).join('')
+      : '<option value="">— Adicione fornecedores ao mapa primeiro —</option>';
+  }
+
+  const tbody = document.getElementById('mpr-tbody');
+  if (!tbody) return;
+
+  const confBadge = score => {
+    const pct = Math.round(score * 100);
+    const [col, bg] = score >= 0.5 ? ['#15803d','#dcfce7'] : score >= 0.25 ? ['#b45309','#fef3c7'] : ['#b91c1c','#fee2e2'];
+    return `<span style="font-size:11px;font-weight:700;color:${col};background:${bg};border-radius:10px;padding:2px 7px">${pct}%</span>`;
+  };
+
+  const linhaOpts = S._mcLinhas.map((l, i) =>
+    `<option value="${i}">${l.descricao}${l.unidade ? ' · ' + l.unidade : ''}</option>`
+  ).join('');
+
+  tbody.innerHTML = _mprItems.map((item, i) => `
+    <tr style="border-bottom:1px solid var(--gray-100);${!item.sel ? 'opacity:.5' : ''}">
+      <td style="padding:6px 8px;text-align:center">
+        <input type="checkbox" ${item.sel ? 'checked' : ''} onchange="mprToggleSel(${i})">
+      </td>
+      <td style="padding:6px 8px;max-width:240px">
+        <div style="font-size:12px;font-weight:500;color:var(--gray-900);line-height:1.3">${item.descricao}</div>
+        ${item.unidade ? `<div style="font-size:11px;color:var(--gray-400)">${item.unidade}</div>` : ''}
+      </td>
+      <td style="padding:6px 8px;text-align:right;font-size:13px;font-weight:700;color:var(--blue-700);white-space:nowrap">
+        ${item.preco != null ? item.preco.toFixed(2) + ' €' : '—'}
+      </td>
+      <td style="padding:6px 8px">
+        <select style="font-size:12px;padding:4px 6px;border:1.5px solid var(--gray-200);border-radius:6px;width:100%;max-width:300px;background:white;font-family:var(--font)"
+          onchange="mprSetLinha(${i}, this.value)">
+          <option value="-1">— Não importar —</option>
+          ${S._mcLinhas.map((l, li) =>
+            `<option value="${li}" ${item.mapaIdx === li ? 'selected' : ''}>${l.descricao}</option>`
+          ).join('')}
+        </select>
+      </td>
+      <td style="padding:6px 8px;text-align:center">${confBadge(item.score)}</td>
+    </tr>`
+  ).join('');
+
+  mprUpdateCount();
+}
+
+function mprUpdateCount() {
+  const n = _mprItems.filter(x => x.sel && x.mapaIdx >= 0).length;
+  const el = document.getElementById('mpr-count');
+  if (el) el.textContent = `${n} item(s) a importar`;
+}
+
+function mprToggleSel(i) {
+  if (_mprItems[i]) {
+    _mprItems[i].sel = !_mprItems[i].sel;
+    // Actualizar opacidade da linha sem re-render completo
+    const rows = document.getElementById('mpr-tbody')?.querySelectorAll('tr');
+    if (rows?.[i]) rows[i].style.opacity = _mprItems[i].sel ? '1' : '0.5';
+  }
+  mprUpdateCount();
+}
+
+function mprSetLinha(i, val) {
+  if (_mprItems[i]) {
+    _mprItems[i].mapaIdx = parseInt(val);
+    _mprItems[i].sel = _mprItems[i].mapaIdx >= 0;
+    const rows = document.getElementById('mpr-tbody')?.querySelectorAll('tr');
+    if (rows?.[i]) {
+      rows[i].style.opacity = _mprItems[i].sel ? '1' : '0.5';
+      const chk = rows[i].querySelector('input[type=checkbox]');
+      if (chk) chk.checked = _mprItems[i].sel;
+    }
+  }
+  mprUpdateCount();
+}
+
+function confirmarPropostaReview() {
+  const sel      = document.getElementById('mpr-forn-sel');
+  const fornNome = sel?.value?.trim() || '';
+  if (!fornNome) { showToast('Seleccione o fornecedor'); return; }
+
+  if (!S._mcFornecedores.find(f => f.nome === fornNome)) {
+    const f = S.FORNECEDORES?.find(x => x.nome === fornNome);
+    S._mcFornecedores.push({ id: f?.id || null, nome: fornNome });
+  }
+
+  let count = 0;
+  _mprItems.forEach(item => {
+    if (!item.sel || item.mapaIdx < 0 || item.preco == null) return;
+    const linha = S._mcLinhas[item.mapaIdx];
+    if (!linha) return;
+    if (!linha._valores) linha._valores = [];
+    const forn = S._mcFornecedores.find(f => f.nome === fornNome);
+    const ex   = linha._valores.find(v => v.fornecedor_nome === fornNome);
+    if (ex) {
+      ex.valor_unit  = item.preco;
+      ex.valor_total = item.preco * (linha.quantidade || 1);
+    } else {
+      linha._valores.push({
+        fornecedor_id:   forn?.id || null,
+        fornecedor_nome: fornNome,
+        valor_unit:      item.preco,
+        valor_total:     item.preco * (linha.quantidade || 1),
+        selecionado:     false
+      });
+    }
+    count++;
+  });
+
+  renderMmcFornecedores();
+  renderMmcLinhas();
+  closeModal('modal-proposta-review');
+  showToast(`${count} preço(s) importado(s) para ${fornNome}`);
+}
+
 // ═══════════════════════════════════════════════════════════
 
 export {
@@ -865,5 +1158,6 @@ export {
   openModalMapa, editarMapaComp, renderMmcFornecedores, adicionarFornecedorMapa, removerFornecedorMapa,
   renderMmcLinhas, adicionarLinhaMapa, removerLinhaMapa, atualizarValorFornMapa,
   uploadListaMapaSecos, uploadListaMapaSecosFile,
+  uploadProposta, uploadPropostaFile, mprToggleSel, mprSetLinha, mprUpdateCount, confirmarPropostaReview,
   saveMapaComp, apagarMapaComp, abrirMapaComparativo, abrirResumoMapa, exportResumoPDF
 };

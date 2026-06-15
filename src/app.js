@@ -61,7 +61,7 @@ import { loadPainelConfig, savePainelConfig, renderPainel, buildWidget, openPain
 import { sbLoadFornecedores, renderFornecedores, openModalFornecedor, saveFornecedor, apagarFornecedor, exportFornecedoresXLSX, fornPag, editarFornecedor } from './modules/fornecedores.js';
 
 // Mapas comparativos
-import { sbLoadMapasComp, renderMapasComp, openModalMapa, editarMapaComp, adicionarFornecedorMapa, removerFornecedorMapa, adicionarLinhaMapa, removerLinhaMapa, atualizarValorFornMapa, uploadListaMapaSecos, uploadListaMapaSecosFile, saveMapaComp, apagarMapaComp, abrirMapaComparativo, abrirResumoMapa, exportResumoPDF, injectMapaCompBtns } from './modules/mapas-comp.js';
+import { sbLoadMapasComp, renderMapasComp, openModalMapa, editarMapaComp, adicionarFornecedorMapa, removerFornecedorMapa, adicionarLinhaMapa, removerLinhaMapa, atualizarValorFornMapa, uploadListaMapaSecos, uploadListaMapaSecosFile, uploadProposta, uploadPropostaFile, mprToggleSel, mprSetLinha, mprUpdateCount, confirmarPropostaReview, saveMapaComp, apagarMapaComp, abrirMapaComparativo, abrirResumoMapa, exportResumoPDF, injectMapaCompBtns } from './modules/mapas-comp.js';
 
 // Dropbox
 import { dropboxInit, dropboxLogin, dropboxLogout, dropboxIsConnected } from './modules/dropbox.js';
@@ -233,6 +233,7 @@ Object.assign(window, {
   adicionarFornecedorMapa, removerFornecedorMapa,
   adicionarLinhaMapa, removerLinhaMapa, atualizarValorFornMapa,
   uploadListaMapaSecos, uploadListaMapaSecosFile,
+  uploadProposta, uploadPropostaFile, mprToggleSel, mprSetLinha, mprUpdateCount, confirmarPropostaReview,
   saveMapaComp, apagarMapaComp, abrirMapaComparativo, abrirResumoMapa, exportResumoPDF,
   criarMapaFromPedido: function() {
     const id = document.getElementById('mcmp-id').value;
