@@ -788,11 +788,82 @@ async function exportResumoPDF() {
   }
 }
 
+// ─── Upload de Lista Excel (Secos) ───────────────────────────
+function uploadListaMapaSecos() {
+  const inp = document.getElementById('mmc-upload-lista-input');
+  if (inp) { inp.value = ''; inp.click(); }
+}
+
+function uploadListaMapaSecosFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const wb   = XLSX.read(ev.target.result, { type: 'binary' });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+      // Encontrar linha de cabeçalho
+      let headerIdx = -1;
+      for (let i = 0; i < Math.min(rows.length, 10); i++) {
+        const r = rows[i].map(h => String(h).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim());
+        if (r.some(h => h === 'nome' || h.includes('descri'))) { headerIdx = i; break; }
+      }
+      if (headerIdx < 0) { showToast('Cabeçalho não encontrado no ficheiro'); return; }
+
+      const norm  = h => String(h).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+      const header = rows[headerIdx].map(norm);
+      const colNome  = header.findIndex(h => h === 'nome' || h.includes('descri'));
+      const colUn    = header.findIndex(h => h === 'un.' || h === 'un' || h.startsWith('un'));
+      const colQtd   = header.findIndex(h => h.includes('qtd') || h.includes('quant'));
+      const colSeco  = header.findIndex(h => h.includes('prec') || h.includes('preco') || h.includes('valor') || h.includes('unit'));
+
+      if (colNome < 0) { showToast('Coluna de descrição não encontrada'); return; }
+
+      let added = 0, updated = 0;
+      for (let i = headerIdx + 1; i < rows.length; i++) {
+        const row  = rows[i];
+        const nome = String(row[colNome] ?? '').trim();
+        if (!nome) continue;
+        const un   = colUn  >= 0 ? (String(row[colUn]  ?? '').trim() || 'un') : 'un';
+        const qty  = colQtd >= 0 ? (parseFloat(String(row[colQtd] ?? '').replace(',', '.')) || 1) : 1;
+        const seco = colSeco >= 0 ? (parseFloat(String(row[colSeco] ?? '').replace(',', '.')) || null) : null;
+
+        // Tentar encontrar linha existente com mesmo nome
+        const existing = S._mcLinhas.find(l =>
+          l.descricao.toLowerCase().trim() === nome.toLowerCase()
+        );
+        if (existing) {
+          if (seco != null) existing.valor_seco = seco;
+          existing.unidade    = un;
+          existing.quantidade = qty;
+          updated++;
+        } else {
+          S._mcLinhas.push({ id: null, descricao: nome, unidade: un, quantidade: qty, valor_seco: seco, valor_venda: null, _valores: [] });
+          added++;
+        }
+      }
+
+      renderMmcLinhas();
+      const msg = [];
+      if (added)   msg.push(`${added} linha(s) adicionada(s)`);
+      if (updated) msg.push(`${updated} linha(s) atualizada(s) com valor seco`);
+      showToast(msg.length ? msg.join(', ') : 'Nenhuma linha nova encontrada');
+    } catch(e) {
+      console.warn('Erro ao ler lista Excel:', e);
+      showToast('Erro ao processar o ficheiro Excel');
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
 // ═══════════════════════════════════════════════════════════
 
 export {
   sbLoadMapasComp, filtrarMapasComp, renderMapasComp, populaMcObras, populaMcPedidos,
   openModalMapa, editarMapaComp, renderMmcFornecedores, adicionarFornecedorMapa, removerFornecedorMapa,
   renderMmcLinhas, adicionarLinhaMapa, removerLinhaMapa, atualizarValorFornMapa,
+  uploadListaMapaSecos, uploadListaMapaSecosFile,
   saveMapaComp, apagarMapaComp, abrirMapaComparativo, abrirResumoMapa, exportResumoPDF
 };
