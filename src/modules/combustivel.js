@@ -21,14 +21,17 @@ async function loadCombustivelAdmin(){
   const obraFilt=document.getElementById('comb-f-obra')?.value||'';
   const tbody=document.getElementById('comb-tbody');
   const empty=document.getElementById('comb-empty');
+  console.log('[COMB] loadCombustivelAdmin called, ini=',document.getElementById('comb-f-ini')?.value);
   tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--gray-400)">A carregar…</td></tr>';
   empty.style.display='none';
   try{
     // ── 1. Carregar TODOS os registos (sem filtro de data) para KPIs globais ──
     const {data:allRows,error:e1}=await sb.from('registos_combustivel').select('*').order('data',{ascending:false}).order('criado_em',{ascending:false});
+    console.log('[COMB] query result:', allRows?.length, 'rows, error:', e1);
     if(e1) throw e1;
 
     if(!allRows||!allRows.length){
+      console.log('[COMB] no rows found, showing empty state');
       tbody.innerHTML='';
       empty.style.display='';
       document.getElementById('comb-kpis').style.display='none';
