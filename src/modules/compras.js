@@ -971,6 +971,70 @@ async function apagarCompra() {
   await sbApagarCompra(rawId);
 }
 
+// ── Upload de Lista Excel ─────────────────────────────────────────
+function uploadListaExcel() {
+  const inp = document.getElementById('cmp-upload-lista-input');
+  if (inp) { inp.value = ''; inp.click(); }
+}
+
+function uploadListaExcelFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const wb   = XLSX.read(ev.target.result, { type: 'binary' });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+      // Encontrar linha de cabeçalho: procura "Descrição" ou "QTD"
+      let headerIdx = -1;
+      for (let i = 0; i < Math.min(rows.length, 10); i++) {
+        const r = rows[i].map(h => String(h).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim());
+        if (r.some(h => h.includes('descri')) && r.some(h => h.includes('qtd') || h === 'un')) {
+          headerIdx = i; break;
+        }
+      }
+      if (headerIdx < 0) { showToast('Cabeçalho não encontrado no ficheiro'); return; }
+
+      const header = rows[headerIdx].map(h => String(h).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim());
+      const colDesc = header.findIndex(h => h.includes('descri'));
+      const colQty  = header.findIndex(h => h.includes('qtd'));
+      const colUn   = header.findIndex(h => h === 'un.' || h === 'un');
+      const colRef  = header.findIndex(h => h === 'artigo' || h.includes('codigo') || h.includes('ref'));
+
+      if (colDesc < 0) { showToast('Coluna "Descrição" não encontrada'); return; }
+
+      let count = 0;
+      for (let i = headerIdx + 1; i < rows.length; i++) {
+        const row  = rows[i];
+        const nome = String(row[colDesc] ?? '').trim();
+        if (!nome) continue;
+        const qtyRaw = colQty >= 0 ? row[colQty] : '';
+        const qty    = parseFloat(String(qtyRaw).replace(',', '.')) || 1;
+        if (qty <= 0) continue;
+        const un  = colUn  >= 0 ? (String(row[colUn]  ?? '').trim() || 'un') : 'un';
+        const ref = colRef >= 0 ? String(row[colRef] ?? '').trim() : '';
+
+        const exists = _cmpArtigosEdit.find(a => a.nome.toLowerCase() === nome.toLowerCase());
+        if (exists) {
+          exists.qty += qty;
+        } else {
+          _cmpArtigosEdit.push({ ref, nome, un, qty });
+          count++;
+        }
+      }
+      cmpRenderArtigosSelected();
+      cmpUpdateArtBtnBadge();
+      showToast(count > 0 ? `${count} artigo(s) importado(s) da lista` : 'Nenhum artigo novo encontrado');
+    } catch(e) {
+      console.warn('Erro ao ler ficheiro Excel:', e);
+      showToast('Erro ao processar o ficheiro Excel');
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
 // ── Exportar Excel ────────────────────────────────────────────────
 function exportComprasXLSX() {
   if (COMPRAS.length === 0) { showToast('Sem pedidos para exportar'); return; }
@@ -1017,6 +1081,7 @@ export {
   cmpRenderArtPicker, cmpAddArtigo, cmpRemoveArtigo, cmpUpdateArtigoQty, cmpAddArtigoRapido,
   cmpAddForn, cmpRemoveForn, cmpInitArtPicker,
   abrirListaMateriais, fecharListaMateriais, confirmarListaMateriais,
+  uploadListaExcel, uploadListaExcelFile,
   cmpLstRender, cmpLstToggle, cmpLstRemoveSel, lstUpdateQty, cmpUpdateArtBtnBadge,
   abrirFornPicker, cmpFornPickerRender, cmpSelFornPicker,
   openCompraModal, enviarEmailNotificacao, initCompras,
