@@ -391,6 +391,26 @@ async function initQrRegistration(){
     sel.innerHTML='<option value="">Selecionar obra…</option>';
     S.OBRAS.filter(o=>o.ativa).forEach(o=>{ const op=document.createElement('option'); op.value=o.id; op.textContent=o.nome; sel.appendChild(op); });
   }
+  // Sessão guardada — pré-preencher nome se o encarregado já está logado
+  let _qrSession = null;
+  try { _qrSession = JSON.parse(localStorage.getItem('plandese_session')||'null'); } catch(e){}
+  const nameInput = document.getElementById('qr-enc-nome');
+  const sessionBanner = document.getElementById('qr-session-banner');
+  const nameField = document.getElementById('qr-enc-nome-field');
+  if(_qrSession?.nome){
+    nameInput.value = _qrSession.nome;
+    nameInput.readOnly = true;
+    nameInput.style.background='var(--gray-50)';
+    nameInput.style.color='var(--gray-500)';
+    if(sessionBanner){ sessionBanner.style.display='flex'; document.getElementById('qr-session-nome').textContent=_qrSession.nome; }
+    if(nameField) nameField.style.display='none';
+  } else {
+    nameInput.readOnly = false;
+    nameInput.style.background='';
+    nameInput.style.color='';
+    if(sessionBanner) sessionBanner.style.display='none';
+    if(nameField) nameField.style.display='';
+  }
   // GPS
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(pos=>{
@@ -454,6 +474,7 @@ function submitQrRegistration(){
 
 export {
   EQUIPAMENTOS, EQ_MOVIMENTOS,
+  EQ_CATS, eqFmtDt, saveEqLocal,
   renderEquipamentos, updateEqKPIs,
   initEqMap, refreshEqMap,
   openEqModal, editEquipamento, saveEquipamento, apagarEquipamento,

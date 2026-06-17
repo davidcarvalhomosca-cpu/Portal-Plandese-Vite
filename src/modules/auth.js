@@ -76,6 +76,7 @@ export async function doLogin() {
   const usr=S.USERS[u];
   if(usr&&usr.pass===p){
     S.currentUser={...usr,key:u};
+    localStorage.setItem('plandese_session',JSON.stringify({key:u,nome:usr.nome,role:usr.role,initials:usr.initials||''}));
     document.getElementById('login-screen').style.display='none';
     document.body.insertAdjacentHTML('beforeend','<div id="loading-screen" style="position:fixed;inset:0;background:#103060;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9998"><div style="width:48px;height:48px;border:4px solid rgba(255,255,255,.2);border-top-color:white;border-radius:50%;animation:spin 1s linear infinite"></div><div style="color:white;margin-top:16px;font-family:DM Sans,sans-serif;font-size:14px" id="loading-msg">A carregar dados...</div></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>');
     try {
@@ -110,6 +111,7 @@ export async function doLogin() {
 
 export function doLogout() {
   S.currentUser = null;
+  localStorage.removeItem('plandese_session');
   S.NOTIFICACOES = [];
   S.notifPanelOpen = false;
   document.getElementById('notif-panel')?.classList.remove('open');
