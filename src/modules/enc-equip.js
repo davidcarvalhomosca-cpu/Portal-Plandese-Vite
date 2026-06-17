@@ -4,7 +4,7 @@
 import { sb } from '../supabase.js';
 import { S, R } from '../state.js';
 import { showToast } from './navigation.js';
-import { sbFetchEquipamentoById, sbUpdateEquipamentoLocal, EQUIPAMENTOS, EQ_MOVIMENTOS, EQ_CATS, eqFmtDt, saveEqLocal } from './equipamentos.js';
+import { sbFetchEquipamentoById, sbUpdateEquipamentoLocal, EQUIPAMENTOS, EQ_MOVIMENTOS, EQ_CATS, eqFmtDt, saveEqLocal, renderEquipamentos, refreshEqMap, updateEqKPIs } from './equipamentos.js';
 
 let _encHtml5Qr = null;
 let _encQrEquipId = null;
@@ -143,6 +143,8 @@ function submitEncEquipamento(){
     EQUIPAMENTOS[idx].ultimoRegisto =mov.criadoEm;
   }
   saveEqLocal();
+  // Actualizar tabela e mapa do admin em tempo real (mesma SPA)
+  try{ renderEquipamentos(); refreshEqMap(); updateEqKPIs(); }catch(e){}
   // Guardar movimento em Supabase
   try{ sb.from('eq_movimentos').insert({equip_id:_encQrEquipId,obra_id:mov.obraId,obra_nome:mov.obraNome,lat:mov.lat,lng:mov.lng,obs:mov.obs,encarregado:mov.encarregado,criado_em:mov.criadoEm}).then(()=>{}).catch(()=>{}); }catch(e){}
   // Actualizar último local do equipamento em Supabase
