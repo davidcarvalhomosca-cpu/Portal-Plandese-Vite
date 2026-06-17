@@ -24,6 +24,7 @@
     "html5-qrcode": "^2.3.8",
     "leaflet": "^1.9.4",
     "pdfjs-dist": "^3.11.174",
+    "qrcode": "^1.5.4",
     "tesseract.js": "^5.0.5",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.1/xlsx-0.20.1.tgz"
   }

@@ -16,6 +16,10 @@ window.XLSX = XLSX;
 import { Html5Qrcode } from 'html5-qrcode';
 window.Html5Qrcode = Html5Qrcode;
 
+// QRCode — gerador de QR codes (usado em showQrCode dos equipamentos)
+import QRCodeLib from 'qrcode';
+window.QRCodeLib = QRCodeLib;
+
 // Importa a logica completa da aplicacao (migrada de portal_antigo.html)
 // app.js ja importa: supabase.js, config.js, utils/helpers.js
 import './app.js';

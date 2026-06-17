@@ -225,8 +225,12 @@ function showQrCode(id){
   document.getElementById('mqr-sub').textContent=(EQ_CATS[eq.categoria]?.label||'Equipamento')+(eq.serie?' · '+eq.serie:'');
   document.getElementById('mqr-url').textContent=qrUrl;
   const qrDiv=document.getElementById('mqr-qrcode'); qrDiv.innerHTML='';
-  if(window.QRCode){
-    new QRCode(qrDiv,{text:qrUrl,width:200,height:200,colorDark:'#0a1f3d',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+  if(window.QRCodeLib){
+    const canvas=document.createElement('canvas');
+    qrDiv.appendChild(canvas);
+    window.QRCodeLib.toCanvas(canvas,qrUrl,{width:200,margin:1,color:{dark:'#0a1f3d',light:'#ffffff'}},err=>{
+      if(err){ qrDiv.innerHTML=`<div style="width:200px;height:200px;background:var(--gray-100);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--gray-400);font-size:12px;text-align:center;padding:12px">Erro ao gerar QR</div>`; }
+    });
   } else {
     qrDiv.innerHTML=`<div style="width:200px;height:200px;background:var(--gray-100);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--gray-400);font-size:12px;text-align:center;padding:12px">Biblioteca QR não carregada</div>`;
   }
