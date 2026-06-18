@@ -52,7 +52,7 @@ import { depSetMovimento, encGoCombDeposito, encSubmeterCombDeposito, encGoCombV
 import { loadEmpresasMOA, loadColaboradoresMOA, addColabMOA, removeColabMOA, renderEmpresasMOA, editEmpresaMOA, saveEmpresaMOA, toggleEmpresaMOA, encAlugPassarTrabalhadores, encAlugVoltarA, encAlugAddTrabalhador, encAlugSubmeter, encAlugRemover, applyMOAFilter, navMOASemana, exportMOAExcel, initMOAFilters } from './modules/enc-aluguer.js';
 
 // Produção
-import { initProducao, renderProdDashboard, coGoList, coOpenDetail, renderPrevFat, editPrevFat, savePrevFat, deletePrevFat, deletePrevFatFromDetail, editPrevFatFromDetail, renderAutos, editAuto, saveAuto, deleteAuto, deleteAutoFromDetail, editAutoFromDetail, clearCustoObra, custoDropzoneClick, custoHandleDrop, obraImportCustos, obraCustosHandleDrop, saveObraExtra, toggleAutosMes, toggleCustosPanel, custoToggleMes, custoSelectAllMeses, saveCustoPctSede } from './modules/producao.js';
+import { initProducao, renderProdDashboard, coGoList, coOpenDetail, goBalancoCustos, renderPrevFat, editPrevFat, savePrevFat, deletePrevFat, deletePrevFatFromDetail, editPrevFatFromDetail, renderAutos, editAuto, saveAuto, deleteAuto, deleteAutoFromDetail, editAutoFromDetail, clearCustoObra, custoDropzoneClick, custoHandleDrop, obraImportCustos, obraCustosHandleDrop, saveObraExtra, toggleAutosMes, toggleCustosPanel, custoToggleMes, custoSelectAllMeses, saveCustoPctSede } from './modules/producao.js';
 
 // Admin/Painel
 import { loadPainelConfig, savePainelConfig, renderPainel, buildWidget, openPainelCustomizer, closePainelCustomizer, savePainelCustomizer, painelWChkChange, painelObraChkChange, renderFechoMes, exportFechoMes } from './modules/admin.js';
@@ -205,7 +205,7 @@ Object.assign(window, {
   encAlugAddTrabalhador, encAlugSubmeter, encAlugRemover,
 
   // Produção / Controlo de Obras
-  coGoList, coOpenDetail,
+  coGoList, coOpenDetail, goBalancoCustos,
   editAutoFromDetail, deleteAutoFromDetail,
   editPrevFatFromDetail, deletePrevFatFromDetail,
   obraImportCustos, obraCustosHandleDrop, clearCustoObra,

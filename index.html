@@ -962,6 +962,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
           <span class="nav-label">Controlo de Obras</span>
         </button>
+        <button class="nav-btn" onclick="goBalancoCustos(this)" id="nav-balanco-custos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8h10M7 12h6"/></svg>
+          <span class="nav-label">Balanço de Custos</span>
+        </button>
       </div>
 
       <button class="nav-lbl" data-grp="def" onclick="toggleNavGrp('def')" type="button">
@@ -2137,8 +2141,7 @@
           .co-kpi{border-bottom:1px solid var(--gray-100)}
           .co-kpi:nth-child(2){border-right:none}
         }
-        /* Hide legacy SUB 3 inline UI — funcionalidade integrada na página de detalhe */
-        #prod-sub-custos{display:none !important}
+        #prod-sub-custos{display:none}
         </style>
 
         <div class="pg-hdr" id="co-list-hdr">
@@ -2271,6 +2274,12 @@
 
         <!-- ── SUB 3: CONTROLO DE CUSTOS ── -->
         <div class="prod-sub" id="prod-sub-custos">
+          <div class="pg-hdr" style="margin-bottom:16px">
+            <div>
+              <div class="pg-title">Balanço de Custos</div>
+              <div class="pg-sub">Visão global de custos, proveitos e resultado — todas as obras</div>
+            </div>
+          </div>
           <!-- Filtro de meses para o balanço -->
           <div id="custo-mes-filter"></div>
           <!-- KPIs -->

@@ -276,8 +276,14 @@ function coBuildRow(s){
   </tr>`;
 }
 
+function _hideCustosSub(){
+  const el = document.getElementById('prod-sub-custos');
+  if(el) el.style.display = 'none';
+}
+
 function coOpenDetail(obraId){
   _coState.detailObraId = obraId;
+  _hideCustosSub();
   document.getElementById('co-list-view').style.display='none';
   document.getElementById('co-list-hdr').style.display='none';
   document.getElementById('co-detail').classList.add('show');
@@ -286,9 +292,26 @@ function coOpenDetail(obraId){
 }
 function coGoList(){
   _coState.detailObraId = null;
+  _hideCustosSub();
   document.getElementById('co-detail').classList.remove('show');
   document.getElementById('co-list-view').style.display='';
   document.getElementById('co-list-hdr').style.display='';
+}
+
+function goBalancoCustos(navBtn){
+  _coState.detailObraId = null;
+  document.getElementById('co-detail').classList.remove('show');
+  document.getElementById('co-list-view').style.display = 'none';
+  document.getElementById('co-list-hdr').style.display = 'none';
+  const sub = document.getElementById('prod-sub-custos');
+  if(sub) sub.style.display = 'block';
+  // highlight nav button
+  if(navBtn){ document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); navBtn.classList.add('active'); }
+  renderCustos();
+  renderCustoObras();
+  renderPivotTable();
+  populateCustoObraSelect();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function coRenderDetail(obraId){
@@ -1216,7 +1239,7 @@ window.addEventListener('resize', function(){
 
 export {
   PREV_FATURACAO, AUTOS_MEDICAO, CUSTOS_FATURAS, OBRAS_EXTRA,
-  initProducao, renderProdDashboard, coGoList, coOpenDetail,
+  initProducao, renderProdDashboard, coGoList, coOpenDetail, goBalancoCustos,
   renderPrevFat, openPrevFatModal, editPrevFat, savePrevFat, deletePrevFat, deletePrevFatFromDetail, editPrevFatFromDetail,
   renderAutos, openAutoModal, editAuto, saveAuto, deleteAuto, deleteAutoFromDetail, editAutoFromDetail, openAutoModalForObra,
   renderCustos, clearCustoFaturas, clearCustoObra, renderCustoObras,
