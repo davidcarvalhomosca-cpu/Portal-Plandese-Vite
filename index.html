@@ -2276,9 +2276,14 @@
           <!-- KPIs -->
           <div class="prod-kpis">
             <div class="prod-kpi red">
-              <div class="prod-kpi-label">Total Custos</div>
+              <div class="prod-kpi-label">Custos Diretos</div>
               <div class="prod-kpi-value" id="custo-k-fat">0 €</div>
               <div class="prod-kpi-sub">faturas importadas</div>
+            </div>
+            <div class="prod-kpi" style="background:var(--white);border:1px solid var(--gray-200)">
+              <div class="prod-kpi-label" style="color:#92400e">Custo de Sede</div>
+              <div class="prod-kpi-value" id="custo-k-sede" style="color:#d97706">0 €</div>
+              <div class="prod-kpi-sub">% dos autos por obra</div>
             </div>
             <div class="prod-kpi green">
               <div class="prod-kpi-label">Total Proveitos</div>
@@ -2288,7 +2293,7 @@
             <div class="prod-kpi blue">
               <div class="prod-kpi-label" id="custo-k-bal-label">Resultado</div>
               <div class="prod-kpi-value" id="custo-k-bal">0 €</div>
-              <div class="prod-kpi-sub">proveitos − custos</div>
+              <div class="prod-kpi-sub">proveitos − custos − sede</div>
             </div>
           </div>
 
@@ -2321,6 +2326,8 @@
                     <th style="background:var(--blue-800);color:#fff;padding:9px 14px;text-align:left;font-weight:600">Obra</th>
                     <th style="background:var(--blue-800);color:#fff;padding:9px 14px;text-align:right;font-weight:600">Custos</th>
                     <th style="background:var(--blue-800);color:#fff;padding:9px 14px;text-align:right;font-weight:600">Proveitos</th>
+                    <th style="background:var(--blue-800);color:#fff;padding:9px 8px;text-align:center;font-weight:600;width:80px">% Sede</th>
+                    <th style="background:var(--blue-800);color:#fff;padding:9px 14px;text-align:right;font-weight:600">C. Sede</th>
                     <th style="background:var(--blue-800);color:#fff;padding:9px 14px;text-align:right;font-weight:600">Resultado</th>
                     <th style="background:var(--blue-800);color:#fff;padding:9px 6px;text-align:center;font-weight:600;width:36px"></th>
                   </tr>

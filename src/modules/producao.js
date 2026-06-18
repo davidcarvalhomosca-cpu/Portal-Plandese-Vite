@@ -716,6 +716,20 @@ function deleteAuto(id){
 
 // ─────────────────────────────────────────
 //  SUBSECÇÃO 3 — CONTROLO DE CUSTOS
+// ── Custo de Sede ─────────────────────────────────────────────────────────
+function custoSedeObra(obraId){
+  if(!obraId || obraId === '__sem__') return 0;
+  return parseFloat((OBRAS_EXTRA[obraId]||{}).custoPctSede||0) || 0;
+}
+
+function saveCustoPctSede(obraId, pct){
+  if(!OBRAS_EXTRA[obraId]) OBRAS_EXTRA[obraId] = {};
+  OBRAS_EXTRA[obraId].custoPctSede = parseFloat(pct) || 0;
+  _saveObrasExtra();
+  renderCustos();
+  renderCustoObras();
+}
+
 // ─────────────────────────────────────────
 function _custoAllMonths(){
   const s = new Set();
@@ -770,10 +784,12 @@ function renderCustos(){
 
   const totalCusto  = faturas.reduce((s,f) => s + (f.custos||0), 0);
   const totalProv   = autos.reduce((s,a) => s + (a.valor||0), 0);
-  const balanco     = totalProv - totalCusto;
+  const totalSede   = autos.reduce((s,a) => s + (a.valor||0) * custoSedeObra(a.obraId) / 100, 0);
+  const balanco     = totalProv - totalCusto - totalSede;
   const isPositive  = balanco >= 0;
 
   document.getElementById('custo-k-fat').textContent  = prodFmtEur(totalCusto);
+  document.getElementById('custo-k-sede').textContent = prodFmtEur(totalSede);
   document.getElementById('custo-k-prov').textContent = prodFmtEur(totalProv);
   const balEl = document.getElementById('custo-k-bal');
   balEl.textContent  = prodFmtEur(Math.abs(balanco));
@@ -817,14 +833,15 @@ function renderCustoObras(){
   const byObra = {};
   CUSTOS_FATURAS.forEach(f => {
     const key = f.obraId || '__sem__';
-    if(!byObra[key]) byObra[key] = { nome: f.obraNome || '(sem obra)', custos: 0, proveitos: 0 };
+    if(!byObra[key]) byObra[key] = { nome: f.obraNome || '(sem obra)', custos: 0, proveitos: 0, sede: 0 };
     byObra[key].custos += (f.custos || 0);
   });
-  // Adicionar proveitos dos autos de medição
+  // Adicionar proveitos e custo de sede dos autos de medição
   AUTOS_MEDICAO.forEach(a => {
     const key = a.obraId || '__sem__';
-    if(!byObra[key]) byObra[key] = { nome: a.obraNome || '(sem obra)', custos: 0, proveitos: 0 };
+    if(!byObra[key]) byObra[key] = { nome: a.obraNome || '(sem obra)', custos: 0, proveitos: 0, sede: 0 };
     byObra[key].proveitos += (a.valor || 0);
+    byObra[key].sede += (a.valor || 0) * custoSedeObra(a.obraId) / 100;
   });
 
   const entries = Object.entries(byObra);
@@ -838,14 +855,21 @@ function renderCustoObras(){
 
   tbody.innerHTML = '';
   entries.sort((a,b) => a[1].nome.localeCompare(b[1].nome)).forEach(([obraId, d]) => {
-    const res = d.proveitos - d.custos;
+    const res = d.proveitos - d.custos - d.sede;
     const isPos = res >= 0;
+    const pctSede = obraId !== '__sem__' ? custoSedeObra(obraId) : 0;
     const tr = document.createElement('tr');
     tr.style.borderBottom = '1px solid var(--gray-100)';
     tr.innerHTML =
       '<td style="padding:9px 14px;font-weight:600;color:var(--gray-900)">' + prodEsc(d.nome) + '</td>' +
       '<td style="padding:9px 14px;text-align:right;color:var(--red)">' + prodFmtEur(d.custos) + '</td>' +
       '<td style="padding:9px 14px;text-align:right;color:var(--green)">' + prodFmtEur(d.proveitos) + '</td>' +
+      '<td style="padding:9px 8px;text-align:center">' +
+        (obraId !== '__sem__'
+          ? '<div style="display:flex;align-items:center;justify-content:center;gap:2px"><input type="number" min="0" max="100" step="0.1" value="' + (pctSede||'') + '" placeholder="0" oninput="saveCustoPctSede(\'' + obraId + '\',this.value)" style="width:52px;text-align:right;border:1px solid var(--gray-300);border-radius:4px;padding:3px 5px;font-size:12px;font-family:var(--font);background:var(--white)"><span style="font-size:12px;color:var(--gray-500)">%</span></div>'
+          : '<span style="color:var(--gray-400);font-size:12px">—</span>') +
+      '</td>' +
+      '<td style="padding:9px 14px;text-align:right;color:#d97706">' + (d.sede > 0 ? prodFmtEur(d.sede) : '—') + '</td>' +
       '<td style="padding:9px 14px;text-align:right;font-weight:700;color:' + (isPos ? 'var(--green)' : 'var(--red)') + '">' +
         (isPos ? '+' : '') + prodFmtEur(res) + '</td>' +
       '<td style="padding:9px 6px;text-align:center">' +
@@ -877,6 +901,7 @@ function renderBalancoChart(){
     if(!m) return;
     if(!months[m]) months[m] = { mes:m, custos:0, proveitos:0 };
     months[m].proveitos += (a.valor||0);
+    months[m].custos += (a.valor||0) * custoSedeObra(a.obraId) / 100;
   });
   CUSTOS_FATURAS.forEach(f => {
     const m = (f.data||'').slice(0,7);
@@ -1196,6 +1221,7 @@ export {
   renderAutos, openAutoModal, editAuto, saveAuto, deleteAuto, deleteAutoFromDetail, editAutoFromDetail, openAutoModalForObra,
   renderCustos, clearCustoFaturas, clearCustoObra, renderCustoObras,
   custoToggleMes, custoSelectAllMeses,
+  custoSedeObra, saveCustoPctSede,
   renderBalancoChart, renderPivotTable,
   custoDropzoneClick, custoHandleDrop, parseCustoExcel, obraImportCustos, obraCustosHandleDrop,
   openObraExtraModal, saveObraExtra,
