@@ -299,14 +299,15 @@ function coGoList(){
 }
 
 function goBalancoCustos(navBtn){
+  // Ativa sec-producao (goTo trata do highlight e chama renderProdDashboard)
+  if(window.goTo) window.goTo('producao', navBtn);
+  // Sobrepor: esconder lista/detalhe, mostrar balanço de custos
   _coState.detailObraId = null;
   document.getElementById('co-detail').classList.remove('show');
   document.getElementById('co-list-view').style.display = 'none';
   document.getElementById('co-list-hdr').style.display = 'none';
   const sub = document.getElementById('prod-sub-custos');
   if(sub) sub.style.display = 'block';
-  // highlight nav button
-  if(navBtn){ document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); navBtn.classList.add('active'); }
   renderCustos();
   renderCustoObras();
   renderPivotTable();
