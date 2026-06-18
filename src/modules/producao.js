@@ -14,7 +14,6 @@ let _editPrevId = null;
 let _autoSubTab = 'contratual';
 let _editAutoId = null;
 let _custoCardObraId = null;
-let custoMesesExcluidos = new Set();
 
 //  PRODUÇÃO — DADOS E FUNÇÕES
 // ═══════════════════════════════════════
@@ -222,7 +221,7 @@ function coBuildCard(s){
         <div class="co-card-status ${st}"><span class="dot"></span>${coStatusLabel(st)}</div>
       </div>
       <div class="co-card-name">${prodEsc(o.nome)}</div>
-      ${ex.localizacao ? `<div class="co-card-loc"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>${prodEsc(ex.localizacao)}</div>` : ''}
+      ${o.local ? `<div class="co-card-loc"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>${prodEsc(o.local)}</div>` : ''}
     </div>
     <div class="co-kpis">
       <div class="co-kpi"><div class="co-kpi-lbl">Contratado</div><div class="co-kpi-val">${s.contratado>0?prodFmtEur(s.contratado):'—'}</div><div class="co-kpi-sub">${s.contratadoPrev>0?'previsão':'sem prev.'}</div></div>
@@ -264,7 +263,7 @@ function coBuildRow(s){
   const nxtKey = hNxt.toISOString().slice(0,7);
   const prevNxt = PREV_FATURACAO.filter(p=>p.obraId===o.id && p.mes===nxtKey).reduce((x,p)=>x+(p.valor||0),0);
   return `<tr onclick="coOpenDetail('${o.id}')">
-    <td><div class="name-cell"><b>${prodEsc(o.nome)}</b><span>${ex.numero?'Nº '+prodEsc(ex.numero):'sem nº'}${ex.localizacao?' · '+prodEsc(ex.localizacao):''}</span></div></td>
+    <td><div class="name-cell"><b>${prodEsc(o.nome)}</b><span>${ex.numero?'Nº '+prodEsc(ex.numero):'sem nº'}${o.local?' · '+prodEsc(o.local):''}</span></div></td>
     <td><span class="status-pill ${st}"><span class="dot"></span>${coStatusLabel(st)}</span></td>
     <td class="num-col">${s.contratado>0?prodFmtEur(s.contratado):'—'}</td>
     <td class="num-col pos">${s.faturado>0?prodFmtEur(s.faturado):'—'}</td>
@@ -276,14 +275,8 @@ function coBuildRow(s){
   </tr>`;
 }
 
-function _hideCustosSub(){
-  const el = document.getElementById('prod-sub-custos');
-  if(el) el.style.display = 'none';
-}
-
 function coOpenDetail(obraId){
   _coState.detailObraId = obraId;
-  _hideCustosSub();
   document.getElementById('co-list-view').style.display='none';
   document.getElementById('co-list-hdr').style.display='none';
   document.getElementById('co-detail').classList.add('show');
@@ -292,28 +285,11 @@ function coOpenDetail(obraId){
 }
 function coGoList(){
   _coState.detailObraId = null;
-  _hideCustosSub();
   document.getElementById('co-detail').classList.remove('show');
   document.getElementById('co-list-view').style.display='';
   document.getElementById('co-list-hdr').style.display='';
 }
 
-function goBalancoCustos(navBtn){
-  // Ativa sec-producao (goTo trata do highlight e chama renderProdDashboard)
-  if(window.goTo) window.goTo('producao', navBtn);
-  // Sobrepor: esconder lista/detalhe, mostrar balanço de custos
-  _coState.detailObraId = null;
-  document.getElementById('co-detail').classList.remove('show');
-  document.getElementById('co-list-view').style.display = 'none';
-  document.getElementById('co-list-hdr').style.display = 'none';
-  const sub = document.getElementById('prod-sub-custos');
-  if(sub) sub.style.display = 'block';
-  renderCustos();
-  renderCustoObras();
-  renderPivotTable();
-  populateCustoObraSelect();
-  window.scrollTo({top:0,behavior:'smooth'});
-}
 
 function coRenderDetail(obraId){
   const o = S.OBRAS.find(x=>x.id===obraId); if(!o) return;
@@ -321,7 +297,7 @@ function coRenderDetail(obraId){
   document.getElementById('co-dt-crumb').textContent = o.nome;
   document.getElementById('co-dt-num').textContent = s.extra.numero ? `OBRA Nº ${s.extra.numero}` : 'SEM Nº';
   document.getElementById('co-dt-name').textContent = o.nome;
-  document.getElementById('co-dt-loc').textContent = s.extra.localizacao || (s.extra.dataInicio?`Início ${coFmtData(s.extra.dataInicio)}`:'Localização não definida');
+  document.getElementById('co-dt-loc').textContent = s.obra.local || (s.extra.dataInicio?`Início ${coFmtData(s.extra.dataInicio)}`:'Localização não definida');
   const stEl = document.getElementById('co-dt-status');
   stEl.className = 'co-hero-status '+s.status;
   document.getElementById('co-dt-status-txt').textContent = coStatusLabel(s.status);
@@ -448,34 +424,6 @@ function coBuildDetailPivot(obraId){
   return t;
 }
 
-// Mantido por compatibilidade — o cartão antigo já não é usado, mas algumas chamadas legadas podem invocá-lo
-function buildObraCard(o){ return ''; }
-
-function buildObraPivot(obraId){
-  const rows = CUSTOS_FATURAS.filter(f => f.obraId === obraId);
-  if(rows.length === 0) return '<div style="font-size:12px;color:rgba(30,64,175,.5);padding:4px 0;margin-top:6px">Sem custos importados para esta obra.</div>';
-  const monthsSet = new Set(); rows.forEach(f => { if(f.mesKey) monthsSet.add(f.mesKey); });
-  const months = [...monthsSet].sort();
-  const fmtM = ym => { const [y,m]=ym.split('-'); const ns=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']; return (ns[parseInt(m)-1]||m)+"'"+y.slice(2); };
-  const pivot = {}; CUSTO_GRUPOS_ORDER.forEach(g => { pivot[g]={}; months.forEach(m=>{ pivot[g][m]=0; }); });
-  rows.forEach(f => { if(CUSTO_GRUPOS_ORDER.includes(f.grupoArtigo)){ pivot[f.grupoArtigo][f.mesKey]=(pivot[f.grupoArtigo][f.mesKey]||0)+(f.custos||0); } });
-  let t = '<div style="overflow-x:auto;margin-top:10px;border-radius:6px;border:1px solid var(--blue-200)"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:280px"><thead><tr><th style="background:var(--blue-800);color:#fff;padding:6px 10px;text-align:left">Grupo</th>';
-  months.forEach(m => { t += '<th style="background:var(--blue-800);color:#fff;padding:6px 8px;text-align:right;white-space:nowrap">' + fmtM(m) + '</th>'; });
-  t += '<th style="background:var(--blue-700);color:#fff;padding:6px 8px;text-align:right;font-weight:700">Total</th></tr></thead><tbody>';
-  const colTot = {}; months.forEach(m=>{ colTot[m]=0; }); let grand=0;
-  CUSTO_GRUPOS_ORDER.forEach(g => {
-    let rowTot=0; t += '<tr><td style="padding:5px 10px;font-weight:600;color:var(--gray-800);background:var(--gray-50)">' + custoGrupoLabel(g) + '</td>';
-    months.forEach(m => { const v=pivot[g][m]||0; rowTot+=v; colTot[m]=(colTot[m]||0)+v; t+=v>0.01?'<td style="padding:5px 8px;text-align:right">'+prodFmtEur(v)+'</td>':'<td style="padding:5px 8px;text-align:right;color:#d1d5db">—</td>'; });
-    grand+=rowTot; t += '<td style="padding:5px 8px;text-align:right;font-weight:700;background:var(--gray-50)">' + (rowTot>0.01?prodFmtEur(rowTot):'—') + '</td></tr>';
-  });
-  t += '<tr style="font-weight:700;background:var(--blue-50)"><td style="padding:5px 10px;color:var(--blue-900)">TOTAL</td>';
-  months.forEach(m => { const v=colTot[m]||0; t+=v>0.01?'<td style="padding:5px 8px;text-align:right;color:var(--blue-800)">'+prodFmtEur(v)+'</td>':'<td style="padding:5px 8px;text-align:right;color:#d1d5db">—</td>'; });
-  t += '<td style="padding:5px 8px;text-align:right;color:var(--blue-800)">' + prodFmtEur(grand) + '</td></tr></tbody></table></div>';
-  return t;
-}
-
-function toggleAutosMes(obraId){ const el=document.getElementById('autos-mes-'+obraId); if(el) el.style.display=el.style.display==='none'?'block':'none'; }
-function toggleCustosPanel(obraId){ const el=document.getElementById('custos-panel-'+obraId); if(!el) return; const open=el.style.display!=='none'; el.style.display=open?'none':'block'; _custoCardObraId=open?null:obraId; }
 
 function openAutoModalForObra(obraId){
   openAutoModal();
@@ -738,262 +686,13 @@ function deleteAuto(id){
   showToast('Auto eliminado');
 }
 
-// ─────────────────────────────────────────
-//  SUBSECÇÃO 3 — CONTROLO DE CUSTOS
-// ── Custo de Sede ─────────────────────────────────────────────────────────
-function custoSedeObra(obraId){
-  if(!obraId || obraId === '__sem__') return 0;
-  return parseFloat((OBRAS_EXTRA[obraId]||{}).custoPctSede||0) || 0;
-}
-
-function saveCustoPctSede(obraId, pct){
-  if(!OBRAS_EXTRA[obraId]) OBRAS_EXTRA[obraId] = {};
-  OBRAS_EXTRA[obraId].custoPctSede = parseFloat(pct) || 0;
-  _saveObrasExtra();
-  renderCustos();
-  renderCustoObras();
-}
-
-// ─────────────────────────────────────────
-function _custoAllMonths(){
-  const s = new Set();
-  CUSTOS_FATURAS.forEach(f => { const m=(f.data||'').slice(0,7); if(m) s.add(m); });
-  AUTOS_MEDICAO.forEach(a => { const m=(a.data||'').slice(0,7); if(m) s.add(m); });
-  return [...s].sort();
-}
-
-function custoToggleMes(mes){
-  if(custoMesesExcluidos.has(mes)) custoMesesExcluidos.delete(mes);
-  else custoMesesExcluidos.add(mes);
-  renderCustos();
-}
-
-function custoSelectAllMeses(all){
-  if(all) custoMesesExcluidos.clear();
-  else _custoAllMonths().forEach(m => custoMesesExcluidos.add(m));
-  renderCustos();
-}
-
-function _renderCustoMesFilter(){
-  const filterEl = document.getElementById('custo-mes-filter');
-  if(!filterEl) return;
-  const allMonths = _custoAllMonths();
-  if(allMonths.length === 0){ filterEl.innerHTML = ''; return; }
-  const allSel  = allMonths.every(m => !custoMesesExcluidos.has(m));
-  const noneSel = allMonths.every(m =>  custoMesesExcluidos.has(m));
-  const chips = allMonths.map(m => {
-    const sel = !custoMesesExcluidos.has(m);
-    return `<button onclick="custoToggleMes('${m}')" style="padding:3px 10px;border-radius:20px;border:1.5px solid ${sel?'var(--blue-700)':'var(--gray-300)'};background:${sel?'var(--blue-700)':'transparent'};color:${sel?'#fff':'var(--gray-500)'};font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s">${prodFmtMesShort(m)}</button>`;
-  }).join('');
-  filterEl.innerHTML = `
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius);margin-bottom:12px">
-      <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-500);white-space:nowrap">Meses no balanço</span>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;flex:1">${chips}</div>
-      <div style="display:flex;gap:5px;flex-shrink:0">
-        <button onclick="custoSelectAllMeses(true)" style="padding:3px 10px;border-radius:20px;border:1.5px solid var(--gray-300);background:${allSel?'var(--gray-200)':'transparent'};color:var(--gray-600);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font)">Todos</button>
-        <button onclick="custoSelectAllMeses(false)" style="padding:3px 10px;border-radius:20px;border:1.5px solid var(--gray-300);background:${noneSel?'var(--gray-200)':'transparent'};color:var(--gray-600);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font)">Nenhum</button>
-      </div>
-    </div>`;
-}
-
-function renderCustos(){
-  _renderCustoMesFilter();
-
-  const faturas = custoMesesExcluidos.size === 0
-    ? CUSTOS_FATURAS
-    : CUSTOS_FATURAS.filter(f => !custoMesesExcluidos.has((f.data||'').slice(0,7)));
-  const autos = custoMesesExcluidos.size === 0
-    ? AUTOS_MEDICAO
-    : AUTOS_MEDICAO.filter(a => !custoMesesExcluidos.has((a.data||'').slice(0,7)));
-
-  const totalCusto  = faturas.reduce((s,f) => s + (f.custos||0), 0);
-  const totalProv   = autos.reduce((s,a) => s + (a.valor||0), 0);
-  const totalSede   = autos.reduce((s,a) => s + (a.valor||0) * custoSedeObra(a.obraId) / 100, 0);
-  const balanco     = totalProv - totalCusto - totalSede;
-  const isPositive  = balanco >= 0;
-
-  document.getElementById('custo-k-fat').textContent  = prodFmtEur(totalCusto);
-  document.getElementById('custo-k-sede').textContent = prodFmtEur(totalSede);
-  document.getElementById('custo-k-prov').textContent = prodFmtEur(totalProv);
-  const balEl = document.getElementById('custo-k-bal');
-  balEl.textContent  = prodFmtEur(Math.abs(balanco));
-  balEl.style.color  = isPositive ? 'var(--green)' : 'var(--red)';
-  const lblEl = document.getElementById('custo-k-bal-label');
-  lblEl.textContent  = isPositive ? 'Resultado Positivo' : 'Resultado Negativo';
-  lblEl.style.color  = isPositive ? 'var(--green)' : 'var(--red)';
-
-  // Atualizar dashboard (cards)
-  renderProdDashboard();
-
-  // Gráfico balanço mensal
-  renderBalancoChart();
-}
-
-function clearCustoFaturas(){
-  if(CUSTOS_FATURAS.length===0){ showToast('Sem registos para limpar'); return; }
-  if(!confirm('Limpar todos os custos importados?')) return;
-  CUSTOS_FATURAS = [];
-  saveProdLocal();
-  renderCustos();
-  showToast('Registos removidos');
-}
-
 function clearCustoObra(obraId){
   if(!confirm('Limpar custos desta obra?')) return;
   CUSTOS_FATURAS = CUSTOS_FATURAS.filter(f => f.obraId !== obraId);
   saveProdLocal();
   renderProdDashboard();
+  if(_coState.detailObraId) coRenderDetail(_coState.detailObraId);
   showToast('Custos da obra removidos');
-}
-
-// ── Balanço por Obra ─────────────────────────────────────────────────────
-function renderCustoObras(){
-  const emptyEl = document.getElementById('custo-obras-empty');
-  const wrapEl  = document.getElementById('custo-obras-wrap');
-  const tbody   = document.getElementById('custo-obras-tbody');
-  if(!tbody) return;
-
-  // Agregar custos por obra
-  const byObra = {};
-  CUSTOS_FATURAS.forEach(f => {
-    const key = f.obraId || '__sem__';
-    if(!byObra[key]) byObra[key] = { nome: f.obraNome || '(sem obra)', custos: 0, proveitos: 0, sede: 0 };
-    byObra[key].custos += (f.custos || 0);
-  });
-  // Adicionar proveitos e custo de sede dos autos de medição
-  AUTOS_MEDICAO.forEach(a => {
-    const key = a.obraId || '__sem__';
-    if(!byObra[key]) byObra[key] = { nome: a.obraNome || '(sem obra)', custos: 0, proveitos: 0, sede: 0 };
-    byObra[key].proveitos += (a.valor || 0);
-    byObra[key].sede += (a.valor || 0) * custoSedeObra(a.obraId) / 100;
-  });
-
-  const entries = Object.entries(byObra);
-  if(entries.length === 0){
-    if(emptyEl) emptyEl.style.display = 'block';
-    if(wrapEl)  wrapEl.style.display  = 'none';
-    return;
-  }
-  if(emptyEl) emptyEl.style.display = 'none';
-  if(wrapEl)  wrapEl.style.display  = 'block';
-
-  tbody.innerHTML = '';
-  entries.sort((a,b) => a[1].nome.localeCompare(b[1].nome)).forEach(([obraId, d]) => {
-    const res = d.proveitos - d.custos - d.sede;
-    const isPos = res >= 0;
-    const pctSede = obraId !== '__sem__' ? custoSedeObra(obraId) : 0;
-    const tr = document.createElement('tr');
-    tr.style.borderBottom = '1px solid var(--gray-100)';
-    tr.innerHTML =
-      '<td style="padding:9px 14px;font-weight:600;color:var(--gray-900)">' + prodEsc(d.nome) + '</td>' +
-      '<td style="padding:9px 14px;text-align:right;color:var(--red)">' + prodFmtEur(d.custos) + '</td>' +
-      '<td style="padding:9px 14px;text-align:right;color:var(--green)">' + prodFmtEur(d.proveitos) + '</td>' +
-      '<td style="padding:9px 8px;text-align:center">' +
-        (obraId !== '__sem__'
-          ? '<div style="display:flex;align-items:center;justify-content:center;gap:2px"><input type="number" min="0" max="100" step="0.1" value="' + (pctSede||'') + '" placeholder="0" oninput="saveCustoPctSede(\'' + obraId + '\',this.value)" style="width:52px;text-align:right;border:1px solid var(--gray-300);border-radius:4px;padding:3px 5px;font-size:12px;font-family:var(--font);background:var(--white)"><span style="font-size:12px;color:var(--gray-500)">%</span></div>'
-          : '<span style="color:var(--gray-400);font-size:12px">—</span>') +
-      '</td>' +
-      '<td style="padding:9px 14px;text-align:right;color:#d97706">' + (d.sede > 0 ? prodFmtEur(d.sede) : '—') + '</td>' +
-      '<td style="padding:9px 14px;text-align:right;font-weight:700;color:' + (isPos ? 'var(--green)' : 'var(--red)') + '">' +
-        (isPos ? '+' : '') + prodFmtEur(res) + '</td>' +
-      '<td style="padding:9px 6px;text-align:center">' +
-        (obraId !== '__sem__' ? '<button class="btn btn-sm" style="color:var(--red);background:var(--red-bg);border:1px solid #fca5a5;padding:3px 8px" onclick="clearCustoObra(\'' + obraId + '\')">✕</button>' : '') +
-      '</td>';
-    tbody.appendChild(tr);
-  });
-}
-
-// ── Pobrar select de obras no tab custos ─────────────────────────────────
-function populateCustoObraSelect(){
-  const sel = document.getElementById('custo-obra-sel');
-  if(!sel) return;
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">— Selecionar obra —</option>' +
-    S.OBRAS.filter(o => o.ativa !== false).map(o => '<option value="' + o.id + '">' + prodEsc(o.nome) + '</option>').join('');
-  if(cur) sel.value = cur;
-}
-
-// ── Gráfico de balanço mensal ─────
-function renderBalancoChart(){
-  const canvas = document.getElementById('balanco-canvas');
-  if(!canvas) return;
-
-  // Agregar dados por mês (YYYY-MM)
-  const months = {};
-  AUTOS_MEDICAO.forEach(a => {
-    const m = (a.data||'').slice(0,7);
-    if(!m) return;
-    if(!months[m]) months[m] = { mes:m, custos:0, proveitos:0 };
-    months[m].proveitos += (a.valor||0);
-    months[m].custos += (a.valor||0) * custoSedeObra(a.obraId) / 100;
-  });
-  CUSTOS_FATURAS.forEach(f => {
-    const m = (f.data||'').slice(0,7);
-    if(!m) return;
-    if(!months[m]) months[m] = { mes:m, custos:0, proveitos:0 };
-    months[m].custos += (f.custos||0);
-  });
-
-  const data = Object.values(months).sort((a,b)=>a.mes.localeCompare(b.mes)).slice(-12);
-  const emptyEl = document.getElementById('balanco-empty');
-
-  if(data.length === 0){
-    canvas.style.display = 'none';
-    emptyEl.style.display = 'block';
-    return;
-  }
-  canvas.style.display = 'block';
-  emptyEl.style.display = 'none';
-
-  const dpr = window.devicePixelRatio || 1;
-  const W   = canvas.parentElement.offsetWidth - 40;
-  const H   = 220;
-  canvas.width  = W * dpr;
-  canvas.height = H * dpr;
-  canvas.style.width  = W + 'px';
-  canvas.style.height = H + 'px';
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-  ctx.clearRect(0,0,W,H);
-
-  const maxVal  = Math.max(...data.map(d=>Math.max(d.custos,d.proveitos,1)));
-  const padL=58, padR=12, padT=12, padB=48;
-  const chartW  = W - padL - padR;
-  const chartH  = H - padT - padB;
-  const colW    = chartW / data.length;
-  const barW    = Math.max(6, Math.min(22, Math.floor(colW/2.8)));
-
-  // Grid
-  ctx.strokeStyle='#E5E7EB'; ctx.lineWidth=1;
-  for(let i=0;i<=4;i++){
-    const y = padT + chartH*(1-i/4);
-    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(W-padR,y); ctx.stroke();
-    ctx.fillStyle='#9CA3AF'; ctx.font='10px sans-serif'; ctx.textAlign='right';
-    ctx.fillText(prodFmtEurShort(maxVal*i/4), padL-5, y+4);
-  }
-
-  // Barras
-  data.forEach((d,i) => {
-    const cx  = padL + i*colW + colW/2;
-    const hC  = d.custos   / maxVal * chartH;
-    const hP  = d.proveitos/ maxVal * chartH;
-
-    // Custos (vermelho)
-    ctx.fillStyle = 'rgba(185,28,28,0.80)';
-    ctx.beginPath(); ctx.roundRect(cx-barW-2, padT+chartH-hC, barW, hC, [3,3,0,0]); ctx.fill();
-    // Proveitos (verde)
-    ctx.fillStyle = 'rgba(21,128,61,0.80)';
-    ctx.beginPath(); ctx.roundRect(cx+2, padT+chartH-hP, barW, hP, [3,3,0,0]); ctx.fill();
-
-    // Label mês
-    ctx.fillStyle='#6B7280'; ctx.font='10px sans-serif'; ctx.textAlign='center';
-    ctx.fillText(prodFmtMesShort(d.mes), cx, padT+chartH+16);
-    // Mini-total dif
-    const dif = d.proveitos - d.custos;
-    ctx.fillStyle = dif>=0 ? 'rgba(21,128,61,0.85)' : 'rgba(185,28,28,0.85)';
-    ctx.font='9px sans-serif';
-    ctx.fillText((dif>=0?'+':'')+prodFmtEurShort(dif), cx, padT+chartH+28);
-  });
 }
 
 // ── Mapeamento de grupos ─────────────────────────────────────────────────
@@ -1003,84 +702,7 @@ function custoGrupoLabel(g){
 }
 const CUSTO_GRUPOS_ORDER = ['Mão de Obra','MateriaPrima','Equipamento','N/D','Geral'];
 
-// ── Tabela dinâmica pivot ─────────────────────────────────────────────────
-function renderPivotTable(){
-  const pivotEmpty = document.getElementById('pivot-empty');
-  const pivotWrap  = document.getElementById('pivot-table-wrap');
-  const pivotTable = document.getElementById('pivot-table');
-  if(!pivotTable) return;
-
-  if(CUSTOS_FATURAS.length === 0){
-    if(pivotEmpty) pivotEmpty.style.display = 'block';
-    if(pivotWrap)  pivotWrap.style.display  = 'none';
-    return;
-  }
-  if(pivotEmpty) pivotEmpty.style.display = 'none';
-  if(pivotWrap)  pivotWrap.style.display  = 'block';
-
-  // Meses únicos ordenados
-  const monthsSet = new Set();
-  CUSTOS_FATURAS.forEach(f => { if(f.mesKey) monthsSet.add(f.mesKey); });
-  const months = [...monthsSet].sort();
-
-  // Pivot: {grupo: {mesKey: total}}
-  const pivot = {};
-  CUSTO_GRUPOS_ORDER.forEach(g => {
-    pivot[g] = {};
-    months.forEach(m => { pivot[g][m] = 0; });
-  });
-  CUSTOS_FATURAS.forEach(f => {
-    const g = f.grupoArtigo;
-    if(!CUSTO_GRUPOS_ORDER.includes(g)) return;
-    if(!pivot[g][f.mesKey]) pivot[g][f.mesKey] = 0;
-    pivot[g][f.mesKey] += (f.custos || 0);
-  });
-
-  const fmtM = ym => {
-    if(!ym) return '—';
-    const [y,m] = ym.split('-');
-    const ns = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-    return (ns[parseInt(m)-1] || m) + "'" + y.slice(2);
-  };
-
-  let t = '<thead><tr>';
-  t += '<th class="pivot-row-header">Grupo</th>';
-  months.forEach(m => { t += '<th>' + fmtM(m) + '</th>'; });
-  t += '<th class="pivot-total-col" style="background:var(--blue-700)">Total</th>';
-  t += '</tr></thead><tbody>';
-
-  const colTotals = {};
-  months.forEach(m => { colTotals[m] = 0; });
-  let grandTotal = 0;
-
-  CUSTO_GRUPOS_ORDER.forEach(g => {
-    const label = custoGrupoLabel(g);
-    let rowTotal = 0;
-    t += '<tr><td class="pivot-row-header">' + label + '</td>';
-    months.forEach(m => {
-      const v = (pivot[g] && pivot[g][m]) ? pivot[g][m] : 0;
-      rowTotal += v;
-      colTotals[m] = (colTotals[m] || 0) + v;
-      t += v > 0.01 ? '<td>' + prodFmtEur(v) + '</td>' : '<td class="zero">—</td>';
-    });
-    grandTotal += rowTotal;
-    t += '<td class="pivot-total-col">' + (rowTotal > 0.01 ? prodFmtEur(rowTotal) : '—') + '</td></tr>';
-  });
-
-  // Linha total
-  t += '<tr><td class="pivot-row-header">TOTAL</td>';
-  months.forEach(m => {
-    const v = colTotals[m] || 0;
-    t += v > 0.01 ? '<td>' + prodFmtEur(v) + '</td>' : '<td class="zero">—</td>';
-  });
-  t += '<td class="pivot-total-col">' + prodFmtEur(grandTotal) + '</td></tr>';
-  t += '</tbody>';
-  pivotTable.innerHTML = t;
-}
-
 // ── Upload Excel de faturas ─────
-function custoDropzoneClick(){ document.getElementById('custo-file-input').click(); }
-
 function custoHandleDrop(e){
   e.preventDefault && e.preventDefault();
   const dz = document.getElementById('custo-dropzone');
@@ -1189,6 +811,7 @@ function parseCustoExcel(file){
 
       saveProdLocal();
       renderProdDashboard();
+      if(_coState.detailObraId) coRenderDetail(_coState.detailObraId);
       showToast(count > 0 ? count + ' linha(s) importada(s) com sucesso' : 'Nenhuma linha reconhecida');
     } catch(err){
       console.error('parseCustoExcel:', err);
@@ -1240,16 +863,13 @@ window.addEventListener('resize', function(){
 
 export {
   PREV_FATURACAO, AUTOS_MEDICAO, CUSTOS_FATURAS, OBRAS_EXTRA,
-  initProducao, renderProdDashboard, coGoList, coOpenDetail, goBalancoCustos,
+  initProducao, renderProdDashboard, coGoList, coOpenDetail,
   renderPrevFat, openPrevFatModal, editPrevFat, savePrevFat, deletePrevFat, deletePrevFatFromDetail, editPrevFatFromDetail,
   renderAutos, openAutoModal, editAuto, saveAuto, deleteAuto, deleteAutoFromDetail, editAutoFromDetail, openAutoModalForObra,
-  renderCustos, clearCustoFaturas, clearCustoObra, renderCustoObras,
-  custoToggleMes, custoSelectAllMeses,
-  custoSedeObra, saveCustoPctSede,
-  renderBalancoChart, renderPivotTable,
-  custoDropzoneClick, custoHandleDrop, parseCustoExcel, obraImportCustos, obraCustosHandleDrop,
+  clearCustoObra,
+  custoHandleDrop, parseCustoExcel, obraImportCustos, obraCustosHandleDrop,
   openObraExtraModal, saveObraExtra,
-  toggleAutosMes, toggleCustosPanel, openPrevFatModalForObra,
+  openPrevFatModalForObra,
   prodFmtEur, prodFmtEurShort, prodFmtMes, prodFmtMesShort, prodFmtData, prodEsc,
   _prodLoadLocal, saveProdLocal, _loadObrasExtra, _saveObrasExtra,
   coComputeStats, coStatusOf, coStatusLabel, coBuildCard, coBuildRow, coRenderDetail, coBuildDetailPivot

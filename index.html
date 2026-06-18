@@ -962,10 +962,6 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
           <span class="nav-label">Controlo de Obras</span>
         </button>
-        <button class="nav-btn" onclick="goBalancoCustos(this)" id="nav-balanco-custos">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8h10M7 12h6"/></svg>
-          <span class="nav-label">Balanço de Custos</span>
-        </button>
       </div>
 
       <button class="nav-lbl" data-grp="def" onclick="toggleNavGrp('def')" type="button">
@@ -2272,114 +2268,6 @@
 
         <input type="file" id="custo-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="custoHandleDrop(event)"/>
 
-        <!-- ── SUB 3: CONTROLO DE CUSTOS ── -->
-        <div class="prod-sub" id="prod-sub-custos">
-          <div class="pg-hdr" style="margin-bottom:16px">
-            <div>
-              <div class="pg-title">Balanço de Custos</div>
-              <div class="pg-sub">Visão global de custos, proveitos e resultado — todas as obras</div>
-            </div>
-          </div>
-          <!-- Filtro de meses para o balanço -->
-          <div id="custo-mes-filter"></div>
-          <!-- KPIs -->
-          <div class="prod-kpis">
-            <div class="prod-kpi red">
-              <div class="prod-kpi-label">Custos Diretos</div>
-              <div class="prod-kpi-value" id="custo-k-fat">0 €</div>
-              <div class="prod-kpi-sub">faturas importadas</div>
-            </div>
-            <div class="prod-kpi" style="background:var(--white);border:1px solid var(--gray-200)">
-              <div class="prod-kpi-label" style="color:#92400e">Custo de Sede</div>
-              <div class="prod-kpi-value" id="custo-k-sede" style="color:#d97706">0 €</div>
-              <div class="prod-kpi-sub">% dos autos por obra</div>
-            </div>
-            <div class="prod-kpi green">
-              <div class="prod-kpi-label">Total Proveitos</div>
-              <div class="prod-kpi-value" id="custo-k-prov">0 €</div>
-              <div class="prod-kpi-sub">autos de medição</div>
-            </div>
-            <div class="prod-kpi blue">
-              <div class="prod-kpi-label" id="custo-k-bal-label">Resultado</div>
-              <div class="prod-kpi-value" id="custo-k-bal">0 €</div>
-              <div class="prod-kpi-sub">proveitos − custos − sede</div>
-            </div>
-          </div>
-
-          <!-- Gráfico de balanço mensal -->
-          <div class="balanco-chart-wrap">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px">
-              <div style="font-size:14px;font-weight:600;color:var(--gray-900)">Balanço Mensal — Custos vs Proveitos</div>
-              <div class="balanco-legend">
-                <div class="balanco-legend-item"><div class="balanco-legend-dot" style="background:rgba(185,28,28,0.8)"></div>Custos</div>
-                <div class="balanco-legend-item"><div class="balanco-legend-dot" style="background:rgba(21,128,61,0.8)"></div>Proveitos</div>
-              </div>
-            </div>
-            <canvas id="balanco-canvas" style="width:100%;display:block;max-height:240px"></canvas>
-            <div id="balanco-empty" style="text-align:center;padding:32px;color:var(--gray-400);font-size:13px;display:none">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:40px;height:40px;color:var(--gray-300);display:block;margin:0 auto 8px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              Sem dados para o gráfico. Importe faturas e adicione autos de medição.
-            </div>
-          </div>
-
-          <!-- Balanço por Obra -->
-          <div style="margin-bottom:20px">
-            <div style="font-size:14px;font-weight:600;color:var(--gray-900);margin-bottom:8px">Balanço Geral por Obra</div>
-            <div id="custo-obras-empty" style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;background:var(--white);border-radius:var(--radius);border:1px solid var(--gray-200)">
-              Sem registos. Selecione uma obra e importe o ficheiro Excel de custos.
-            </div>
-            <div id="custo-obras-wrap" style="display:none;border-radius:var(--radius);border:1px solid var(--gray-200);overflow:hidden">
-              <table style="width:100%;border-collapse:collapse;font-size:13px">
-                <thead>
-                  <tr>
-                    <th style="background:var(--blue-800);color:#fff;padding:9px 14px;text-align:left;font-weight:600">Obra</th>
-                    <th style="background:var(--blue-800);color:#fff;padding:9px 14px;text-align:right;font-weight:600">Custos</th>
-                    <th style="background:var(--blue-800);color:#fff;padding:9px 14px;text-align:right;font-weight:600">Proveitos</th>
-                    <th style="background:var(--blue-800);color:#fff;padding:9px 8px;text-align:center;font-weight:600;width:80px">% Sede</th>
-                    <th style="background:var(--blue-800);color:#fff;padding:9px 14px;text-align:right;font-weight:600">C. Sede</th>
-                    <th style="background:var(--blue-800);color:#fff;padding:9px 14px;text-align:right;font-weight:600">Resultado</th>
-                    <th style="background:var(--blue-800);color:#fff;padding:9px 6px;text-align:center;font-weight:600;width:36px"></th>
-                  </tr>
-                </thead>
-                <tbody id="custo-obras-tbody"></tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Upload Excel de custos por obra -->
-          <div class="card" style="margin-bottom:16px">
-            <div style="font-size:14px;font-weight:600;color:var(--gray-900);margin-bottom:3px">Importar Custos (Excel)</div>
-            <div style="font-size:12px;color:var(--gray-500);margin-bottom:12px">Selecione a obra e carregue o ficheiro Excel de custos — colunas: <strong>GrupoArtigo</strong>, <strong>Custos</strong>, <strong>Mes</strong>, <strong>Ano</strong></div>
-            <div class="field" style="margin-bottom:12px">
-              <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-500);display:block;margin-bottom:6px">Obra *</label>
-              <select id="custo-obra-sel" style="width:100%;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-family:var(--font);font-size:14px;color:var(--gray-900);outline:none">
-                <option value="">— Selecionar obra —</option>
-              </select>
-            </div>
-            <div class="custo-dropzone" id="custo-dropzone"
-              onclick="custoDropzoneClick()"
-              ondragover="event.preventDefault();this.classList.add('dragging')"
-              ondragleave="this.classList.remove('dragging')"
-              ondrop="custoHandleDrop(event)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              <div style="font-size:15px;font-weight:600;color:var(--gray-900);margin-bottom:4px">Arraste o ficheiro ou clique para selecionar</div>
-              <div style="font-size:11px;color:var(--gray-400);font-family:'DM Mono',monospace">.xlsx &nbsp;·&nbsp; .xls</div>
-            </div>
-            <input type="file" id="custo-file-input-legacy" accept=".xlsx,.xls,.csv" style="display:none" onchange="custoHandleDrop(event)"/>
-          </div>
-
-          <!-- Tabela dinâmica pivot -->
-          <div style="margin-bottom:20px">
-            <div style="font-size:14px;font-weight:600;color:var(--gray-900);margin-bottom:8px">Tabela Dinâmica — Custos por Grupo e Mês</div>
-            <div id="pivot-empty" style="text-align:center;padding:28px;color:var(--gray-400);font-size:13px;background:var(--white);border-radius:var(--radius);border:1px solid var(--gray-200);display:block">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:36px;height:36px;color:var(--gray-300);display:block;margin:0 auto 8px"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-              Sem dados. Importe um ficheiro Excel para visualizar a tabela dinâmica.
-            </div>
-            <div class="pivot-wrap" id="pivot-table-wrap" style="display:none">
-              <table class="pivot-table" id="pivot-table"></table>
-            </div>
-          </div>
-        </div>
       </section>
 
       <!-- FOLHA DE FECHO -->

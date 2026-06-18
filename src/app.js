@@ -52,7 +52,7 @@ import { depSetMovimento, encGoCombDeposito, encSubmeterCombDeposito, encGoCombV
 import { loadEmpresasMOA, loadColaboradoresMOA, addColabMOA, removeColabMOA, renderEmpresasMOA, editEmpresaMOA, saveEmpresaMOA, toggleEmpresaMOA, encAlugPassarTrabalhadores, encAlugVoltarA, encAlugAddTrabalhador, encAlugSubmeter, encAlugRemover, applyMOAFilter, navMOASemana, exportMOAExcel, initMOAFilters } from './modules/enc-aluguer.js';
 
 // Produção
-import { initProducao, renderProdDashboard, coGoList, coOpenDetail, goBalancoCustos, renderPrevFat, editPrevFat, savePrevFat, deletePrevFat, deletePrevFatFromDetail, editPrevFatFromDetail, renderAutos, editAuto, saveAuto, deleteAuto, deleteAutoFromDetail, editAutoFromDetail, clearCustoObra, custoDropzoneClick, custoHandleDrop, obraImportCustos, obraCustosHandleDrop, saveObraExtra, toggleAutosMes, toggleCustosPanel, custoToggleMes, custoSelectAllMeses, saveCustoPctSede } from './modules/producao.js';
+import { initProducao, renderProdDashboard, coGoList, coOpenDetail, renderPrevFat, editPrevFat, savePrevFat, deletePrevFat, deletePrevFatFromDetail, editPrevFatFromDetail, renderAutos, editAuto, saveAuto, deleteAuto, deleteAutoFromDetail, editAutoFromDetail, clearCustoObra, custoHandleDrop, obraImportCustos, obraCustosHandleDrop, saveObraExtra } from './modules/producao.js';
 
 // Admin/Painel
 import { loadPainelConfig, savePainelConfig, renderPainel, buildWidget, openPainelCustomizer, closePainelCustomizer, savePainelCustomizer, painelWChkChange, painelObraChkChange, renderFechoMes, exportFechoMes } from './modules/admin.js';
@@ -205,16 +205,13 @@ Object.assign(window, {
   encAlugAddTrabalhador, encAlugSubmeter, encAlugRemover,
 
   // Produção / Controlo de Obras
-  coGoList, coOpenDetail, goBalancoCustos,
+  coGoList, coOpenDetail,
   editAutoFromDetail, deleteAutoFromDetail,
   editPrevFatFromDetail, deletePrevFatFromDetail,
   obraImportCustos, obraCustosHandleDrop, clearCustoObra,
   editPrevFat, deletePrevFat, savePrevFat,
   editAuto, deleteAuto, saveAuto,
-  custoDropzoneClick, custoHandleDrop,
-  toggleAutosMes, toggleCustosPanel,
-  custoToggleMes, custoSelectAllMeses,
-  saveCustoPctSede,
+  custoHandleDrop,
   exportSemanaExcel,
 
   // Notificações
