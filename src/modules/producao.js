@@ -14,6 +14,7 @@ let _editPrevId = null;
 let _autoSubTab = 'contratual';
 let _editAutoId = null;
 let _custoCardObraId = null;
+let custoMesesExcluidos = new Set();
 
 //  PRODUÇÃO — DADOS E FUNÇÕES
 // ═══════════════════════════════════════
@@ -716,9 +717,59 @@ function deleteAuto(id){
 // ─────────────────────────────────────────
 //  SUBSECÇÃO 3 — CONTROLO DE CUSTOS
 // ─────────────────────────────────────────
+function _custoAllMonths(){
+  const s = new Set();
+  CUSTOS_FATURAS.forEach(f => { const m=(f.data||'').slice(0,7); if(m) s.add(m); });
+  AUTOS_MEDICAO.forEach(a => { const m=(a.data||'').slice(0,7); if(m) s.add(m); });
+  return [...s].sort();
+}
+
+function custoToggleMes(mes){
+  if(custoMesesExcluidos.has(mes)) custoMesesExcluidos.delete(mes);
+  else custoMesesExcluidos.add(mes);
+  renderCustos();
+}
+
+function custoSelectAllMeses(all){
+  if(all) custoMesesExcluidos.clear();
+  else _custoAllMonths().forEach(m => custoMesesExcluidos.add(m));
+  renderCustos();
+}
+
+function _renderCustoMesFilter(){
+  const filterEl = document.getElementById('custo-mes-filter');
+  if(!filterEl) return;
+  const allMonths = _custoAllMonths();
+  if(allMonths.length === 0){ filterEl.innerHTML = ''; return; }
+  const allSel  = allMonths.every(m => !custoMesesExcluidos.has(m));
+  const noneSel = allMonths.every(m =>  custoMesesExcluidos.has(m));
+  const chips = allMonths.map(m => {
+    const sel = !custoMesesExcluidos.has(m);
+    return `<button onclick="custoToggleMes('${m}')" style="padding:3px 10px;border-radius:20px;border:1.5px solid ${sel?'var(--blue-700)':'var(--gray-300)'};background:${sel?'var(--blue-700)':'transparent'};color:${sel?'#fff':'var(--gray-500)'};font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s">${prodFmtMesShort(m)}</button>`;
+  }).join('');
+  filterEl.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius);margin-bottom:12px">
+      <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-500);white-space:nowrap">Meses no balanço</span>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;flex:1">${chips}</div>
+      <div style="display:flex;gap:5px;flex-shrink:0">
+        <button onclick="custoSelectAllMeses(true)" style="padding:3px 10px;border-radius:20px;border:1.5px solid var(--gray-300);background:${allSel?'var(--gray-200)':'transparent'};color:var(--gray-600);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font)">Todos</button>
+        <button onclick="custoSelectAllMeses(false)" style="padding:3px 10px;border-radius:20px;border:1.5px solid var(--gray-300);background:${noneSel?'var(--gray-200)':'transparent'};color:var(--gray-600);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font)">Nenhum</button>
+      </div>
+    </div>`;
+}
+
 function renderCustos(){
-  const totalCusto  = CUSTOS_FATURAS.reduce((s,f) => s + (f.custos||0), 0);
-  const totalProv   = AUTOS_MEDICAO.reduce((s,a) => s + (a.valor||0), 0);
+  _renderCustoMesFilter();
+
+  const faturas = custoMesesExcluidos.size === 0
+    ? CUSTOS_FATURAS
+    : CUSTOS_FATURAS.filter(f => !custoMesesExcluidos.has((f.data||'').slice(0,7)));
+  const autos = custoMesesExcluidos.size === 0
+    ? AUTOS_MEDICAO
+    : AUTOS_MEDICAO.filter(a => !custoMesesExcluidos.has((a.data||'').slice(0,7)));
+
+  const totalCusto  = faturas.reduce((s,f) => s + (f.custos||0), 0);
+  const totalProv   = autos.reduce((s,a) => s + (a.valor||0), 0);
   const balanco     = totalProv - totalCusto;
   const isPositive  = balanco >= 0;
 
@@ -1144,6 +1195,7 @@ export {
   renderPrevFat, openPrevFatModal, editPrevFat, savePrevFat, deletePrevFat, deletePrevFatFromDetail, editPrevFatFromDetail,
   renderAutos, openAutoModal, editAuto, saveAuto, deleteAuto, deleteAutoFromDetail, editAutoFromDetail, openAutoModalForObra,
   renderCustos, clearCustoFaturas, clearCustoObra, renderCustoObras,
+  custoToggleMes, custoSelectAllMeses,
   renderBalancoChart, renderPivotTable,
   custoDropzoneClick, custoHandleDrop, parseCustoExcel, obraImportCustos, obraCustosHandleDrop,
   openObraExtraModal, saveObraExtra,

@@ -52,7 +52,7 @@ import { depSetMovimento, encGoCombDeposito, encSubmeterCombDeposito, encGoCombV
 import { loadEmpresasMOA, loadColaboradoresMOA, addColabMOA, removeColabMOA, renderEmpresasMOA, editEmpresaMOA, saveEmpresaMOA, toggleEmpresaMOA, encAlugPassarTrabalhadores, encAlugVoltarA, encAlugAddTrabalhador, encAlugSubmeter, encAlugRemover, applyMOAFilter, navMOASemana, exportMOAExcel, initMOAFilters } from './modules/enc-aluguer.js';
 
 // Produção
-import { initProducao, renderProdDashboard, coGoList, coOpenDetail, renderPrevFat, editPrevFat, savePrevFat, deletePrevFat, deletePrevFatFromDetail, editPrevFatFromDetail, renderAutos, editAuto, saveAuto, deleteAuto, deleteAutoFromDetail, editAutoFromDetail, clearCustoObra, custoDropzoneClick, custoHandleDrop, obraImportCustos, obraCustosHandleDrop, saveObraExtra, toggleAutosMes, toggleCustosPanel } from './modules/producao.js';
+import { initProducao, renderProdDashboard, coGoList, coOpenDetail, renderPrevFat, editPrevFat, savePrevFat, deletePrevFat, deletePrevFatFromDetail, editPrevFatFromDetail, renderAutos, editAuto, saveAuto, deleteAuto, deleteAutoFromDetail, editAutoFromDetail, clearCustoObra, custoDropzoneClick, custoHandleDrop, obraImportCustos, obraCustosHandleDrop, saveObraExtra, toggleAutosMes, toggleCustosPanel, custoToggleMes, custoSelectAllMeses } from './modules/producao.js';
 
 // Admin/Painel
 import { loadPainelConfig, savePainelConfig, renderPainel, buildWidget, openPainelCustomizer, closePainelCustomizer, savePainelCustomizer, painelWChkChange, painelObraChkChange, renderFechoMes, exportFechoMes } from './modules/admin.js';
@@ -213,6 +213,7 @@ Object.assign(window, {
   editAuto, deleteAuto, saveAuto,
   custoDropzoneClick, custoHandleDrop,
   toggleAutosMes, toggleCustosPanel,
+  custoToggleMes, custoSelectAllMeses,
   exportSemanaExcel,
 
   // Notificações
