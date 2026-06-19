@@ -174,6 +174,35 @@ async function openModalMapa(pedidoId) {
   openModal('modal-mapa-comp');
 }
 
+async function openModalMapaFromLPU(obraId, artigos) {
+  S._mcMapaAtual = null;
+  S._mcFornecedores = [];
+  const obraObj = S.OBRAS.find(o => o.id === obraId);
+  document.getElementById('mmc-title').textContent = 'Novo Mapa Comparativo';
+  document.getElementById('mmc-sub').textContent = 'A partir da Lista de Preços Unitários';
+  document.getElementById('mmc-id').value = '';
+  document.getElementById('mmc-titulo').value = obraObj ? `Mapa Comparativo — ${obraObj.nome}` : 'Mapa Comparativo';
+  document.getElementById('mmc-descricao').value = '';
+  document.getElementById('mmc-estado').value = 'rascunho';
+  document.getElementById('mmc-mostrar-venda').checked = false;
+  populaMcObras();
+  populaMcPedidos();
+  if (obraId) document.getElementById('mmc-obra').value = obraId;
+  document.getElementById('mmc-del-btn').style.display = 'none';
+  S._mcLinhas = artigos.map(a => ({
+    id: null,
+    descricao: a.codigo ? `[${a.codigo}] ${a.descricao}` : a.descricao,
+    unidade: a.unidade || 'un',
+    quantidade: a.quantidade || 1,
+    valor_seco: a.precoUnit || null,
+    valor_venda: null,
+    _valores: []
+  }));
+  renderMmcFornecedores();
+  renderMmcLinhas();
+  openModal('modal-mapa-comp');
+}
+
 async function editarMapaComp(id) {
   const m = S.MAPAS_COMP.find(x => x.id === id);
   if (!m) return;
@@ -1155,7 +1184,7 @@ function confirmarPropostaReview() {
 
 export {
   sbLoadMapasComp, filtrarMapasComp, renderMapasComp, populaMcObras, populaMcPedidos,
-  openModalMapa, editarMapaComp, renderMmcFornecedores, adicionarFornecedorMapa, removerFornecedorMapa,
+  openModalMapa, openModalMapaFromLPU, editarMapaComp, renderMmcFornecedores, adicionarFornecedorMapa, removerFornecedorMapa,
   renderMmcLinhas, adicionarLinhaMapa, removerLinhaMapa, atualizarValorFornMapa,
   uploadListaMapaSecos, uploadListaMapaSecosFile,
   uploadProposta, uploadPropostaFile, mprToggleSel, mprSetLinha, mprUpdateCount, confirmarPropostaReview,

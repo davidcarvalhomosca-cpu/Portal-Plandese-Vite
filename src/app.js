@@ -61,7 +61,7 @@ import { loadPainelConfig, savePainelConfig, renderPainel, buildWidget, openPain
 import { sbLoadFornecedores, renderFornecedores, openModalFornecedor, saveFornecedor, apagarFornecedor, exportFornecedoresXLSX, fornPag, editarFornecedor } from './modules/fornecedores.js';
 
 // Mapas comparativos
-import { sbLoadMapasComp, renderMapasComp, openModalMapa, editarMapaComp, adicionarFornecedorMapa, removerFornecedorMapa, adicionarLinhaMapa, removerLinhaMapa, atualizarValorFornMapa, uploadListaMapaSecos, uploadListaMapaSecosFile, uploadProposta, uploadPropostaFile, mprToggleSel, mprSetLinha, mprUpdateCount, confirmarPropostaReview, saveMapaComp, apagarMapaComp, abrirMapaComparativo, abrirResumoMapa, exportResumoPDF, injectMapaCompBtns } from './modules/mapas-comp.js';
+import { sbLoadMapasComp, renderMapasComp, openModalMapa, openModalMapaFromLPU, editarMapaComp, adicionarFornecedorMapa, removerFornecedorMapa, adicionarLinhaMapa, removerLinhaMapa, atualizarValorFornMapa, uploadListaMapaSecos, uploadListaMapaSecosFile, uploadProposta, uploadPropostaFile, mprToggleSel, mprSetLinha, mprUpdateCount, confirmarPropostaReview, saveMapaComp, apagarMapaComp, abrirMapaComparativo, abrirResumoMapa, exportResumoPDF, injectMapaCompBtns } from './modules/mapas-comp.js';
 
 // Dropbox
 import { dropboxInit, dropboxLogin, dropboxLogout, dropboxIsConnected } from './modules/dropbox.js';
@@ -70,7 +70,7 @@ import { dropboxInit, dropboxLogin, dropboxLogout, dropboxIsConnected } from './
 import { renderMapaFerias, feriasNavAno, feriasTogglePrevista, feriasToggleLock, feriasSetFiltro } from './modules/ferias.js';
 
 // Preços Unitários
-import { initPrecosUnit, puGoList, puOpenObra, puOpenImport, puHandleFile, puHandleDrop, puDragOver, puDragLeave, puExportExcel, puLimpar, puEditCell, puToggleNota, puSaveNota, _puRefreshDetail } from './modules/precos-unitarios.js';
+import { initPrecosUnit, puGoList, puOpenObra, puOpenImport, puHandleFile, puHandleDrop, puDragOver, puDragLeave, puExportExcel, puLimpar, puEditCell, puToggleNota, puSaveNota, _puRefreshDetail, puToggleSelMode, puToggleArtigoSel, puToggleSelAll, puCriarMapaComp } from './modules/precos-unitarios.js';
 
 // Advertências
 import { openAdvertencias, closeAdvertencias, advShowForm, advShowLista, saveAdvertencia, advEliminar, advGerarPDF } from './modules/advertencias.js';
@@ -218,6 +218,7 @@ Object.assign(window, {
   puOpenImport, puHandleFile, puHandleDrop, puDragOver, puDragLeave,
   puExportExcel, puLimpar, _puRefreshDetail,
   puEditCell, puToggleNota, puSaveNota,
+  puToggleSelMode, puToggleArtigoSel, puToggleSelAll, puCriarMapaComp,
 
   // Produção / Controlo de Obras
   coGoList, coOpenDetail,
@@ -243,7 +244,7 @@ Object.assign(window, {
 
   // Mapas Comparativos
   sbLoadMapasComp, renderMapasComp,
-  openModalMapa, editarMapaComp,
+  openModalMapa, openModalMapaFromLPU, editarMapaComp,
   adicionarFornecedorMapa, removerFornecedorMapa,
   adicionarLinhaMapa, removerLinhaMapa, atualizarValorFornMapa,
   uploadListaMapaSecos, uploadListaMapaSecosFile,

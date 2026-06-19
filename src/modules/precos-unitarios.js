@@ -5,7 +5,7 @@ import { S } from '../state.js';
 import { showToast } from './navigation.js';
 
 let PRECOS_UNIT = [];
-let _puState = { obraId: null };
+let _puState = { obraId: null, selMode: false, selIdxs: new Set() };
 
 // ── Persistência ──────────────────────────────────────────────────────────────
 function _puLoad(){ try{ PRECOS_UNIT = JSON.parse(localStorage.getItem('prod_precos_unit')||'[]'); }catch(e){ PRECOS_UNIT=[]; } }
@@ -23,6 +23,9 @@ function initPrecosUnit(){
 
 function puGoList(){
   _puState.obraId = null;
+  _puState.selMode = false;
+  _puState.selIdxs = new Set();
+  document.getElementById('pu-sel-floater')?.remove();
   _show('pu-list-view');
   _hide('pu-detail');
   _puRenderList();
@@ -103,6 +106,9 @@ function _puRenderDetail(){
        <button class="btn btn-green" onclick="puExportExcel()">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Descarregar Excel
        </button>
+       <button id="pu-sel-mode-btn" class="btn" style="${_puState.selMode?'background:#EFF6FF;color:#1D4ED8;border:1.5px solid #BFDBFE;font-weight:600':''}" onclick="puToggleSelMode()">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="9 11 12 14 19 7"/></svg>${_puState.selMode?'A selecionar…':'Para mapa de compras'}
+       </button>
        <button class="btn" style="color:var(--red);background:var(--red-bg);border:1px solid #fca5a5" onclick="puLimpar()">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>Limpar
        </button>`
@@ -155,25 +161,30 @@ function _puRenderTable(lista){
   const q       = (document.getElementById('pu-dt-q')?.value||'').toLowerCase().trim();
   const artigos = lista.artigos;
 
+  const sel = _puState.selMode;
   let rowsHtml = '';
   artigos.forEach((a, idx) => {
     if(a.isCapitulo){
       const nivel = a.nivel || 0;
       rowsHtml += `<tr class="pu-cap-row nivel-${nivel}" data-idx="${idx}">
+        ${sel ? '<td style="width:36px"></td>' : ''}
         <td class="pu-cap-cod">${puEsc(a.codigo||'')}</td>
-        <td colspan="6" class="pu-cap-desc">${puEsc(a.descricao||'')}</td>
+        <td colspan="${sel?5:6}" class="pu-cap-desc">${puEsc(a.descricao||'')}</td>
         <td></td>
       </tr>`;
       return;
     }
     if(q && !(a.codigo+' '+a.descricao+' '+(a.notas||'')).toLowerCase().includes(q)) return;
 
-    const tot     = (a.quantidade||0)*(a.precoUnit||0);
-    const pct     = a.percentTotal || 0;
-    const editado = a.editado ? ' pu-row-edited' : '';
-    const temNota = a.notas ? ' pu-has-nota' : '';
+    const tot      = (a.quantidade||0)*(a.precoUnit||0);
+    const pct      = a.percentTotal || 0;
+    const editado  = a.editado ? ' pu-row-edited' : '';
+    const temNota  = a.notas ? ' pu-has-nota' : '';
+    const checked  = sel && _puState.selIdxs.has(idx);
+    const selClass = checked ? ' pu-row-sel' : '';
 
-    rowsHtml += `<tr class="pu-artigo-row${editado}" data-idx="${idx}">
+    rowsHtml += `<tr class="pu-artigo-row${editado}${selClass}" data-idx="${idx}">
+      ${sel ? `<td class="pu-chk-cell"><input type="checkbox" ${checked?'checked':''} onchange="puToggleArtigoSel(${idx})"/></td>` : ''}
       <td class="pu-cod">${puEsc(a.codigo||'—')}</td>
       <td class="pu-desc">
         <div class="pu-desc-text" data-idx="${idx}" data-field="descricao" onclick="puEditCell(this)">${puEsc(a.descricao||'')}</div>
@@ -191,7 +202,7 @@ function _puRenderTable(lista){
       </td>
     </tr>
     <tr class="pu-nota-row" id="pu-nota-row-${idx}" style="display:none" data-idx="${idx}">
-      <td colspan="8" class="pu-nota-td">
+      <td colspan="${sel?9:8}" class="pu-nota-td">
         <textarea class="pu-nota-textarea" data-idx="${idx}" onblur="puSaveNota(${idx},this.value)" placeholder="Escreva notas, observações ou alertas sobre este artigo…">${puEsc(a.notas||'')}</textarea>
       </td>
     </tr>`;
@@ -203,11 +214,12 @@ function _puRenderTable(lista){
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
         <input id="pu-dt-q" placeholder="Pesquisar código, descrição ou nota…" oninput="_puRefreshDetail()" value="${q}"/>
       </div>
-      <div style="font-size:11.5px;color:var(--gray-500);padding:0 4px">Clique em qualquer célula para editar</div>
+      <div style="font-size:11.5px;color:var(--gray-500);padding:0 4px">${sel ? '<span style="color:#1D4ED8;font-weight:600">Clique no checkbox para selecionar artigos</span>' : 'Clique em qualquer célula para editar'}</div>
     </div>
     <div class="pu-table-wrap">
       <table class="pu-table" id="pu-articulado-table">
         <thead><tr>
+          ${sel ? `<th style="width:36px;text-align:center"><input type="checkbox" title="Selecionar todos" onchange="puToggleSelAll(this.checked)"/></th>` : ''}
           <th style="width:100px">Artigo</th>
           <th>Descrição</th>
           <th style="width:55px;text-align:center">Un.</th>
@@ -217,7 +229,7 @@ function _puRenderTable(lista){
           <th style="width:60px;text-align:right">%</th>
           <th style="width:36px"></th>
         </tr></thead>
-        <tbody id="pu-tbody">${rowsHtml||'<tr><td colspan="8" style="text-align:center;color:var(--gray-400);padding:24px">Nenhum artigo corresponde à pesquisa.</td></tr>'}</tbody>
+        <tbody id="pu-tbody">${rowsHtml||`<tr><td colspan="${sel?9:8}" style="text-align:center;color:var(--gray-400);padding:24px">Nenhum artigo corresponde à pesquisa.</td></tr>`}</tbody>
       </table>
     </div>`;
 }
@@ -730,6 +742,70 @@ function _isChapterCode(cod){
   return /^[IVXLCDMivxlcdm]+$/i.test(cod)||/^[A-Z]{1,3}$/.test(cod)||/^\d+\.$/.test(cod)||/^CAP/i.test(cod);
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+//  SELEÇÃO PARA MAPA COMPARATIVO
+// ══════════════════════════════════════════════════════════════════════════════
+
+function puToggleSelMode(){
+  _puState.selMode = !_puState.selMode;
+  if(!_puState.selMode) _puState.selIdxs = new Set();
+  _puRenderDetail();
+  _puRenderSelBar();
+}
+
+function puToggleArtigoSel(idx){
+  if(_puState.selIdxs.has(idx)) _puState.selIdxs.delete(idx);
+  else _puState.selIdxs.add(idx);
+  const n = _puState.selIdxs.size;
+  const row = document.querySelector(`tr.pu-artigo-row[data-idx="${idx}"]`);
+  if(row) row.classList.toggle('pu-row-sel', _puState.selIdxs.has(idx));
+  const cnt = document.getElementById('pu-sel-count');
+  if(cnt) cnt.textContent = n;
+  const txt = document.getElementById('pu-sel-txt');
+  if(txt) txt.textContent = `artigo${n!==1?'s':''} selecionado${n!==1?'s':''}`;
+  const btn = document.getElementById('pu-sel-criar-btn');
+  if(btn){ btn.style.opacity = n ? '1' : '0.4'; btn.style.pointerEvents = n ? '' : 'none'; }
+}
+
+function puToggleSelAll(checked){
+  _puState.selIdxs = new Set();
+  if(checked){
+    const lista = PRECOS_UNIT.find(l => l.obraId === _puState.obraId);
+    if(lista) lista.artigos.forEach((a,i) => { if(!a.isCapitulo) _puState.selIdxs.add(i); });
+  }
+  const lista = PRECOS_UNIT.find(l => l.obraId === _puState.obraId);
+  if(lista) _puRenderTable(lista);
+  _puRenderSelBar();
+}
+
+function _puRenderSelBar(){
+  document.getElementById('pu-sel-floater')?.remove();
+  if(!_puState.selMode) return;
+  const count = _puState.selIdxs.size;
+  const bar = document.createElement('div');
+  bar.id = 'pu-sel-floater';
+  bar.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111827;color:white;border-radius:14px;padding:12px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,.35);z-index:9999;font-size:14px;white-space:nowrap';
+  bar.innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" style="width:16px;height:16px;flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="9 11 12 14 19 7"/></svg>
+    <span><span id="pu-sel-count" style="font-weight:700;color:#60a5fa">${count}</span> <span id="pu-sel-txt" style="color:rgba(255,255,255,.7)">artigo${count!==1?'s':''} selecionado${count!==1?'s':''}</span></span>
+    <button id="pu-sel-criar-btn" onclick="puCriarMapaComp()" style="background:#3b82f6;color:white;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:opacity .15s;${!count?'opacity:.4;pointer-events:none':''}">
+      <svg viewBox="0 0 24 24" fill="currentColor" style="width:13px;height:13px"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+      Criar Mapa Comparativo
+    </button>
+    <button onclick="puToggleSelMode()" style="background:none;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.7);border-radius:8px;padding:8px 12px;cursor:pointer;font-size:12px">Cancelar</button>`;
+  document.body.appendChild(bar);
+}
+
+function puCriarMapaComp(){
+  const lista = PRECOS_UNIT.find(l => l.obraId === _puState.obraId);
+  if(!lista) return;
+  const artigos = lista.artigos.filter((a,i) => !a.isCapitulo && _puState.selIdxs.has(i));
+  if(!artigos.length){ showToast('Selecione pelo menos um artigo'); return; }
+  const obraId = _puState.obraId;
+  window.goTo('mapas-comparativos', document.getElementById('nav-mapas-comp'));
+  setTimeout(() => { if(window.openModalMapaFromLPU) window.openModalMapaFromLPU(obraId, artigos); }, 350);
+}
+
 function _show(id){ const el=document.getElementById(id); if(el) el.style.display=''; }
 function _hide(id){ const el=document.getElementById(id); if(el) el.style.display='none'; }
 
@@ -743,5 +819,6 @@ export {
   puOpenImport, puHandleFile, puHandleDrop, puDragOver, puDragLeave,
   puExportExcel, puLimpar,
   puEditCell, puToggleNota, puSaveNota, _puRefreshDetail,
+  puToggleSelMode, puToggleArtigoSel, puToggleSelAll, puCriarMapaComp,
   _puLoad, _puSave
 };
