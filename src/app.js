@@ -70,7 +70,7 @@ import { dropboxInit, dropboxLogin, dropboxLogout, dropboxIsConnected } from './
 import { renderMapaFerias, feriasNavAno, feriasTogglePrevista, feriasToggleLock, feriasSetFiltro } from './modules/ferias.js';
 
 // Preços Unitários
-import { initPrecosUnit, puGoList, puOpenObra, puOpenImport, puHandleFile, puHandleDrop, puDragOver, puDragLeave, puExportExcel, puLimpar, _puRefreshDetail } from './modules/precos-unitarios.js';
+import { initPrecosUnit, puGoList, puOpenObra, puOpenImport, puHandleFile, puHandleDrop, puDragOver, puDragLeave, puExportExcel, puLimpar, puEditCell, puToggleNota, puSaveNota, _puRefreshDetail } from './modules/precos-unitarios.js';
 
 // Advertências
 import { openAdvertencias, closeAdvertencias, advShowForm, advShowLista, saveAdvertencia, advEliminar, advGerarPDF } from './modules/advertencias.js';
@@ -217,6 +217,7 @@ Object.assign(window, {
   initPrecosUnit, puGoList, puOpenObra,
   puOpenImport, puHandleFile, puHandleDrop, puDragOver, puDragLeave,
   puExportExcel, puLimpar, _puRefreshDetail,
+  puEditCell, puToggleNota, puSaveNota,
 
   // Produção / Controlo de Obras
   coGoList, coOpenDetail,
