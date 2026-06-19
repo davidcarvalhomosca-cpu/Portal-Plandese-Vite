@@ -54,7 +54,7 @@ function _puRenderList(){
     const lista    = PRECOS_UNIT.find(l => l.obraId === o.id);
     const temLista = lista?.artigos?.length > 0;
     const totArt   = temLista ? lista.artigos.filter(a => !a.isCapitulo).length : 0;
-    const totVal   = temLista ? lista.artigos.filter(a => !a.isCapitulo).reduce((s,a) => s+(a.precoUnit||0)*(a.quantidade||0),0) : 0;
+    const totVal   = temLista ? lista.artigos.filter(a => !a.isCapitulo).reduce((s,a) => s+(a.total||0),0) : 0;
     const dataImp  = temLista && lista.importadoEm ? new Date(lista.importadoEm).toLocaleDateString('pt-PT') : null;
     const editados = temLista ? lista.artigos.filter(a => a.editado).length : 0;
 
@@ -114,7 +114,7 @@ function _puRenderDetail(){
   const kpiZone = document.getElementById('pu-dt-kpis');
   if(temLista){
     const totArt  = lista.artigos.filter(a=>!a.isCapitulo).length;
-    const totVal  = lista.artigos.filter(a=>!a.isCapitulo).reduce((s,a)=>s+(a.precoUnit||0)*(a.quantidade||0),0);
+    const totVal  = lista.artigos.filter(a=>!a.isCapitulo).reduce((s,a)=>s+(a.total||0),0);
     const editados= lista.artigos.filter(a=>a.editado).length;
     const dataImp = lista.importadoEm ? new Date(lista.importadoEm).toLocaleDateString('pt-PT') : '—';
     kpiZone.style.display = '';
@@ -350,7 +350,7 @@ function puSaveNota(idx, value){
 function _puUpdateKpis(){
   const lista = PRECOS_UNIT.find(l => l.obraId === _puState.obraId);
   if(!lista) return;
-  const totVal  = lista.artigos.filter(a=>!a.isCapitulo).reduce((s,a)=>s+(a.precoUnit||0)*(a.quantidade||0),0);
+  const totVal  = lista.artigos.filter(a=>!a.isCapitulo).reduce((s,a)=>s+(a.total||0),0);
   const editados= lista.artigos.filter(a=>a.editado).length;
   const kq = document.querySelector('#pu-dt-kpis .pu-kpi:nth-child(2) .pu-kpi-val');
   if(kq) kq.textContent = puFmtEur(totVal);
@@ -545,6 +545,9 @@ function _puBuildArticosFromLines(lines){
       if(pendingCode !== null && fullText.length > 2) pendingDesc.push(fullText);
     }
   }
+  // DEBUG: log artigos onde precoUnit*qty difere muito do total declarado
+  const suspicious = artigos.filter(a => !a.isCapitulo && Math.abs((a.precoUnit||0)*(a.quantidade||0) - (a.total||0)) > 100);
+  if(suspicious.length) console.warn('[PU DEBUG] Artigos com precoUnit*qty ≠ total:', suspicious.map(a=>({ cod:a.codigo, qty:a.quantidade, price:a.precoUnit, total:a.total })));
   return artigos;
 }
 
