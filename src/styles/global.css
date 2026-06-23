@@ -1768,6 +1768,7 @@ body.dark-mode .lmb-add-card-btn{border-color:rgba(255,255,255,.15);color:rgba(2
 
 /* Header */
 .enc-v2-header{background:white;padding:calc(env(safe-area-inset-top,0px) + 16px) 20px 16px;border-bottom:1px solid #eef2f8}
+@media(max-width:500px){.enc-v2-header{padding-top:max(calc(env(safe-area-inset-top,0px) + 16px),60px)}}
 .enc-v2-header-top{display:flex;justify-content:space-between;align-items:flex-start}
 .enc-v2-greeting{font-size:12px;color:#8aa0bf;font-weight:600;letter-spacing:.2px}
 .enc-v2-name{font-size:22px;font-weight:900;color:#0f1e3a;letter-spacing:-.5px;margin-top:2px;line-height:1.1}
