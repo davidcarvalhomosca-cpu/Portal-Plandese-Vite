@@ -103,6 +103,7 @@ body{font-family:var(--font);color:var(--gray-900);height:100%;overflow:hidden;f
   flex-shrink:0;overflow:hidden;border-bottom:1px solid var(--gray-200);
   padding-top:env(safe-area-inset-top,0px);
 }
+@media(max-width:500px){.app-bar{padding-top:max(env(safe-area-inset-top,0px),44px)}}
 .app-bar::before{display:none}
 /* Admin app-bar: navy strip left aligned with sidebar */
 #admin-app .app-bar{background:#fff;border-bottom:1px solid #e2e8f0}
