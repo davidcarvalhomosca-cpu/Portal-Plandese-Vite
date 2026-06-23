@@ -40,7 +40,7 @@ import { renderEquipamentos, openEqModal, editEquipamento, saveEquipamento, apag
 import { loadCombustivelAdmin, toggleCombView, renderCombObraCards, exportCombustivelXLSX, _initCombustivelAdmin } from './modules/combustivel.js';
 
 // Enc-ponto
-import { initEnc, encPassarColaboradores, encVoltarScreen1, carregarEquipaAnterior, adicionarTodosOntem, encAddColab, encRemColab, encSubmeterRegisto, encGoMenuPonto, encGoFolhaPontoPlandese, encGoFolhaPonto, encGoHistoricoEnc, encLoadHistorico, encGoFolhaPontoAluguer, encGoEquipamentos, encGoCombustivel, encVoltarHome, encOpenWeatherModal, encCloseWeatherModal } from './modules/enc-ponto.js';
+import { initEnc, encPassarColaboradores, encVoltarScreen1, carregarEquipaAnterior, adicionarTodosOntem, encAddColab, encRemColab, encSubmeterRegisto, encGoMenuPonto, encGoFolhaPontoPlandese, encGoFolhaPonto, encGoHistoricoEnc, encLoadHistorico, encGoFolhaPontoAluguer, encGoEquipamentos, encGoCombustivel, encVoltarHome, encOpenWeatherModal, encCloseWeatherModal, encToggleSheet, encCloseSheet } from './modules/enc-ponto.js';
 
 // Enc-equip
 import { encScanNovamente, submitEncEquipamento } from './modules/enc-equip.js';
@@ -193,6 +193,7 @@ Object.assign(window, {
   // Encarregado — navegação
   encVoltarHome, encGoMenuPonto, encGoFolhaPontoPlandese,
   encOpenWeatherModal, encCloseWeatherModal,
+  encToggleSheet, encCloseSheet,
   encGoFolhaPontoAluguer, encGoHistoricoEnc,
   encGoEquipamentos, encGoCombustivel,
 

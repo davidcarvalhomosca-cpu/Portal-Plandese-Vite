@@ -1759,4 +1759,123 @@ body.dark-mode .lmb-card-title{color:var(--gray-100)}
 body.dark-mode .lmb-card-desc{color:var(--gray-400)}
 body.dark-mode .lmb-col-title{color:var(--gray-300)}
 body.dark-mode .lmb-add-card-btn{border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.3)}
+
+/* ═══════════════════════════════════════════════
+   ENC V2 — Dashboard Azul Aço (Variante 2)
+═══════════════════════════════════════════════ */
+.enc-v2-root{display:flex;flex-direction:column;flex:1;background:#f0f4fa;overflow-y:auto;overflow-x:hidden;padding-bottom:76px}
+
+/* Header */
+.enc-v2-header{background:white;padding:env(safe-area-inset-top,16px) 20px 16px;border-bottom:1px solid #eef2f8}
+.enc-v2-header-top{display:flex;justify-content:space-between;align-items:flex-start}
+.enc-v2-greeting{font-size:12px;color:#8aa0bf;font-weight:600;letter-spacing:.2px}
+.enc-v2-name{font-size:22px;font-weight:900;color:#0f1e3a;letter-spacing:-.5px;margin-top:2px;line-height:1.1}
+.enc-v2-logout-btn{font-size:12px;font-weight:600;color:#8aa0bf;background:none;border:1px solid #dae4f5;border-radius:20px;padding:5px 12px;cursor:pointer;margin-top:2px}
+.enc-v2-logout-btn:active{background:#f5f8fd}
+.enc-v2-obra-pill{display:inline-flex;align-items:center;gap:6px;background:#eef4ff;border:1px solid #d0e0f8;border-radius:20px;padding:5px 12px;margin-top:10px;max-width:100%}
+.enc-v2-obra-dot{width:7px;height:7px;border-radius:50%;background:#1e4a8a;flex-shrink:0}
+.enc-v2-obra-pill span:not(.enc-v2-obra-dot):not(.enc-v2-prazo-badge){font-size:12px;font-weight:700;color:#1e4a8a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.enc-v2-prazo-badge{font-size:11px;font-weight:700;color:#4a7cc4;background:#d8eaff;border-radius:10px;padding:1px 7px;white-space:nowrap;flex-shrink:0}
+
+/* Weather card */
+.enc-v2-weather{display:flex;align-items:center;justify-content:space-between;background:#1e4a8a;border-radius:18px;margin:16px 16px 0;padding:16px 18px;cursor:pointer;border:none;width:calc(100% - 32px);text-align:left}
+.enc-v2-weather:active{opacity:.9}
+.enc-v2-weather-left{display:flex;flex-direction:column;gap:2px}
+.enc-v2-temp{font-size:34px;font-weight:900;color:white;line-height:1}
+.enc-v2-weather-desc{font-size:13px;color:rgba(255,255,255,.75);font-weight:600;margin-top:4px}
+.enc-v2-weather-rain{font-size:11px;color:rgba(255,255,255,.6);margin-top:2px}
+.enc-v2-weather-icon{color:rgba(255,255,255,.6)}
+
+/* Section label */
+.enc-v2-section-lbl{font-size:10px;font-weight:700;color:#8aa0bf;text-transform:uppercase;letter-spacing:.6px;padding:16px 16px 8px}
+
+/* Stats row */
+.enc-v2-stats{display:flex;background:white;border-radius:16px;margin:0 16px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.05)}
+.enc-v2-stat{flex:1;padding:14px 8px;text-align:center}
+.enc-v2-stat-div{border-left:1px solid #f0f4fa}
+.enc-v2-stat-val{font-size:26px;font-weight:900;color:#1e4a8a;line-height:1}
+.enc-v2-stat-alert{color:#c0392b}
+.enc-v2-stat-lbl{font-size:10px;color:#8aa0bf;font-weight:600;margin-top:4px;text-transform:uppercase;letter-spacing:.3px}
+
+/* Pending list */
+.enc-v2-pending{margin:0 16px;display:flex;flex-direction:column;gap:8px}
+.enc-v2-pending-item{display:flex;align-items:center;gap:12px;background:white;border-radius:14px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.enc-v2-pending-ico{width:34px;height:34px;border-radius:10px;background:#eef4ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#1e4a8a}
+.enc-v2-pending-ico svg{width:17px;height:17px}
+.enc-v2-pending-info .enc-v2-pi-title{font-size:13px;font-weight:700;color:#0f1e3a}
+.enc-v2-pending-info .enc-v2-pi-sub{font-size:11px;color:#8aa0bf;margin-top:1px}
+.enc-v2-pending-badge{margin-left:auto;background:#eef4ff;color:#1e4a8a;font-size:10px;font-weight:800;padding:3px 9px;border-radius:10px;flex-shrink:0}
+.enc-v2-pending-badge.alert{background:#fdecea;color:#c0392b}
+.enc-v2-pending-empty{font-size:13px;color:#aac0da;text-align:center;padding:16px;background:white;border-radius:14px}
+.enc-v2-ok-banner{display:flex;align-items:center;gap:10px;background:#edfaf3;border-radius:14px;padding:12px 14px}
+.enc-v2-ok-banner svg{width:18px;height:18px;color:#1a7a4a;flex-shrink:0}
+.enc-v2-ok-banner span{font-size:13px;font-weight:600;color:#1a7a4a}
+
+/* Bottom tab bar */
+.enc-v2-tabbar{position:fixed;bottom:0;left:0;right:0;height:68px;background:white;border-top:1px solid #eef2f8;display:flex;align-items:center;padding:0 4px calc(env(safe-area-inset-bottom,0px) + 6px);z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,.06)}
+.enc-v2-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:6px 0 0;color:#aac0da}
+.enc-v2-tab span{font-size:9px;font-weight:600}
+.enc-v2-tab.enc-v2-tab-act{color:#1e4a8a}
+.enc-v2-fab{width:52px;height:52px;border-radius:50%;background:#1e4a8a;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-bottom:10px;flex-shrink:0;box-shadow:0 4px 14px rgba(30,74,138,.35);transition:transform .15s,box-shadow .15s}
+.enc-v2-fab:active{transform:scale(.94);box-shadow:0 2px 8px rgba(30,74,138,.25)}
+.enc-v2-fab.open{background:#0f1e3a}
+
+/* Bottom sheet overlay */
+.enc-v2-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;backdrop-filter:blur(2px)}
+.enc-v2-overlay.visible{display:block}
+
+/* Bottom sheet */
+.enc-v2-sheet{position:fixed;bottom:0;left:0;right:0;background:white;border-radius:24px 24px 0 0;padding:12px 0 calc(env(safe-area-inset-bottom,0px) + 20px);z-index:201;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);box-shadow:0 -8px 40px rgba(0,0,0,.15)}
+.enc-v2-sheet.open{transform:translateY(0)}
+.enc-v2-sheet-handle{width:36px;height:4px;background:#e0e8f0;border-radius:2px;margin:0 auto 14px}
+.enc-v2-sheet-title{font-size:17px;font-weight:800;color:#0f1e3a;text-align:center;letter-spacing:-.3px}
+.enc-v2-sheet-sub{font-size:12px;color:#8aa0bf;text-align:center;margin-top:3px;margin-bottom:16px}
+.enc-v2-sheet-item{display:flex;align-items:center;gap:14px;width:calc(100% - 32px);margin:0 16px 10px;background:#f5f8fd;border:none;border-radius:16px;padding:13px 14px;cursor:pointer;text-align:left}
+.enc-v2-sheet-item:active{background:#eef2f8}
+.enc-v2-sheet-ico{width:40px;height:40px;border-radius:12px;background:#dce8f8;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#1e4a8a}
+.enc-v2-sheet-info{flex:1;min-width:0}
+.enc-v2-sheet-ititle{font-size:14px;font-weight:700;color:#0f1e3a}
+.enc-v2-sheet-isub{font-size:11px;color:#8aa0bf;margin-top:2px}
+.enc-v2-sheet-arr{color:#ccd8ea;flex-shrink:0}
+
+/* App bar: esconder quando enc-screen0 está ativo */
+#enc-app.enc-home-active .app-bar{display:none}
+
+/* Dark mode enc-v2 */
+body.dark-mode .enc-v2-root{background:#111827}
+body.dark-mode .enc-v2-header{background:#1a2236;border-color:rgba(255,255,255,.06)}
+body.dark-mode .enc-v2-greeting{color:#4a6080}
+body.dark-mode .enc-v2-name{color:#e8edf5}
+body.dark-mode .enc-v2-logout-btn{color:#4a6080;border-color:#1e3060}
+body.dark-mode .enc-v2-obra-pill{background:#152035;border-color:#1e3060}
+body.dark-mode .enc-v2-obra-pill span:not(.enc-v2-obra-dot):not(.enc-v2-prazo-badge){color:#6a9fd8}
+body.dark-mode .enc-v2-prazo-badge{background:#1a3060;color:#6a9fd8}
+body.dark-mode .enc-v2-weather{background:#0f2040}
+body.dark-mode .enc-v2-section-lbl{color:#3a5070}
+body.dark-mode .enc-v2-stats{background:#1a2236;box-shadow:none}
+body.dark-mode .enc-v2-stat-div{border-color:#0f1828}
+body.dark-mode .enc-v2-stat-val{color:#5a9fdf}
+body.dark-mode .enc-v2-stat-lbl{color:#3a5070}
+body.dark-mode .enc-v2-pending-item{background:#1a2236;box-shadow:none}
+body.dark-mode .enc-v2-pi-title{color:#c8d8ec!important}
+body.dark-mode .enc-v2-pi-sub{color:#3a5070!important}
+body.dark-mode .enc-v2-pending-ico{background:#152035}
+body.dark-mode .enc-v2-pending-badge{background:#152035;color:#5a9fdf}
+body.dark-mode .enc-v2-tabbar{background:#111827;border-color:rgba(255,255,255,.06)}
+body.dark-mode .enc-v2-tab{color:#2a4060}
+body.dark-mode .enc-v2-tab.enc-v2-tab-act{color:#5a9fdf}
+body.dark-mode .enc-v2-fab{background:#1e4a8a}
+body.dark-mode .enc-v2-sheet{background:#1a2236}
+body.dark-mode .enc-v2-sheet-handle{background:#2a3a50}
+body.dark-mode .enc-v2-sheet-title{color:#e8edf5}
+body.dark-mode .enc-v2-sheet-sub{color:#3a5070}
+body.dark-mode .enc-v2-sheet-item{background:#1f2d42;border:none}
+body.dark-mode .enc-v2-sheet-item:active{background:#253550}
+body.dark-mode .enc-v2-sheet-ico{background:#152035}
+body.dark-mode .enc-v2-sheet-ititle{color:#e8edf5}
+body.dark-mode .enc-v2-sheet-isub{color:#3a5070}
+body.dark-mode .enc-v2-sheet-arr{color:#2a3a50}
+body.dark-mode .enc-v2-pending-empty{background:#1a2236;color:#2a4060}
+body.dark-mode .enc-v2-ok-banner{background:#0f2818}
+body.dark-mode .enc-v2-ok-banner span{color:#3ab870!important}
 body.dark-mode #admin-app .dw-date,body.dark-mode #enc-app .dw-date{color:var(--gray-400)}

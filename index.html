@@ -53,132 +53,163 @@
     </div>
   </div>
 
-  <!-- ECRÃ 0: HOME — ESCOLHA DE MÓDULO -->
+  <!-- ECRÃ 0: HOME — DASHBOARD V2 -->
   <div id="enc-screen0" style="display:none;flex:1;flex-direction:column">
-    <div class="enc-home-body">
+    <div class="enc-v2-root">
 
-      <!-- Widgets: Trabalhadores hoje + Meteorologia -->
-      <div class="enc-home-widgets">
-        <div class="enc-widget">
-          <div class="enc-widget-icon" id="enc-obra-prazo-icon" style="background:#f0fdf4;color:#16a34a">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          </div>
+      <!-- HEADER -->
+      <div class="enc-v2-header">
+        <div class="enc-v2-header-top">
           <div>
-            <div class="enc-widget-value" id="enc-obra-prazo-days">—</div>
-            <div class="enc-widget-label" id="enc-obra-prazo-label">prazo da obra</div>
+            <div class="enc-v2-greeting" id="enc-v2-greeting">Bom dia</div>
+            <div class="enc-v2-name" id="enc-home-nome">Encarregado</div>
           </div>
+          <button class="enc-v2-logout-btn" onclick="doLogout()">Sair</button>
         </div>
-        <button class="enc-widget" onclick="encOpenWeatherModal()" style="cursor:pointer;text-align:left">
-          <div class="enc-widget-icon" id="enc-weather-icon" style="background:#fefce8;color:#ca8a04">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-          </div>
-          <div>
-            <div class="enc-widget-value" id="enc-weather-temp">—</div>
-            <div class="enc-widget-label" id="enc-weather-desc">A carregar...</div>
-            <div class="enc-widget-rain-alert" id="enc-weather-rain-alert"></div>
-          </div>
-        </button>
+        <div class="enc-v2-obra-pill" id="enc-v2-obra-pill">
+          <span class="enc-v2-obra-dot"></span>
+          <span id="enc-v2-obra-nome">A carregar obra...</span>
+          <span class="enc-v2-prazo-badge" id="enc-v2-prazo-badge"></span>
+        </div>
       </div>
 
-      <div class="enc-home-cards">
-
-        <!-- FOLHAS DE PONTO -->
-        <div class="enc-sec-label">Folhas de Ponto</div>
-
-        <!-- MO Plandese -->
-        <button class="enc-card-p" onclick="encGoFolhaPontoPlandese()">
-          <div class="enc-card-p-accent" style="background:#2563eb"></div>
-          <div class="enc-card-p-inner">
-            <div class="enc-card-p-icon" style="background:#eff6ff;color:#2563eb">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            </div>
-            <div class="enc-card-p-info">
-              <div class="enc-card-p-title">MO Plandese</div>
-              <div class="enc-card-p-desc">Presenças da equipa Plandese</div>
-              <div class="enc-card-p-done" id="enc-done-plandese">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                Registado hoje
-              </div>
-            </div>
-            <div class="enc-card-p-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-          </div>
-        </button>
-
-        <!-- MO Aluguer -->
-        <button class="enc-card-p" onclick="encGoFolhaPontoAluguer()">
-          <div class="enc-card-p-accent" style="background:#7c3aed"></div>
-          <div class="enc-card-p-inner">
-            <div class="enc-card-p-icon" style="background:#f5f3ff;color:#7c3aed">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            </div>
-            <div class="enc-card-p-info">
-              <div class="enc-card-p-title">MO Aluguer</div>
-              <div class="enc-card-p-desc">Trabalhadores cedidos por empresa externa</div>
-              <div class="enc-card-p-done" id="enc-done-aluguer">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                Registado hoje
-              </div>
-            </div>
-            <div class="enc-card-p-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-          </div>
-        </button>
-
-        <!-- Histórico -->
-        <button class="enc-card-p" onclick="encGoHistoricoEnc()">
-          <div class="enc-card-p-accent" style="background:#6b7280"></div>
-          <div class="enc-card-p-inner">
-            <div class="enc-card-p-icon" style="background:#f9fafb;color:#6b7280">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            </div>
-            <div class="enc-card-p-info">
-              <div class="enc-card-p-title">Histórico</div>
-              <div class="enc-card-p-desc">Consultar registos anteriores</div>
-            </div>
-            <div class="enc-card-p-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-          </div>
-        </button>
-
-        <!-- OUTROS -->
-        <div class="enc-sec-label" style="margin-top:8px">Outros</div>
-        <div class="enc-sec-row">
-          <button class="enc-card-s" onclick="encGoEquipamentos()">
-            <div class="enc-mode-icon orange sm">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h.01"/><path d="M18 14h.01"/><path d="M21 14h.01"/><path d="M14 18h.01"/><path d="M18 18h.01"/><path d="M21 18h.01"/><path d="M14 21h.01"/><path d="M18 21h.01"/><path d="M21 21h.01"/></svg>
-            </div>
-            <div class="enc-card-s-label">Equipamentos</div>
-            <div class="enc-card-s-sub">Registar QR</div>
-          </button>
-          <button class="enc-card-s" onclick="encGoCombustivel()">
-            <div class="enc-mode-icon red sm">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            </div>
-            <div class="enc-card-s-label">Combustível</div>
-            <div class="enc-card-s-sub">Abastecimento</div>
-          </button>
-          <button class="enc-card-s" onclick="encGoComprasChat()">
-            <div class="enc-mode-icon green sm">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-            </div>
-            <div class="enc-card-s-label">Compras</div>
-            <div class="enc-card-s-sub">Solicitar</div>
-          </button>
+      <!-- WEATHER CARD -->
+      <button class="enc-v2-weather" onclick="encOpenWeatherModal()">
+        <div class="enc-v2-weather-left">
+          <div class="enc-v2-temp" id="enc-weather-temp">—</div>
+          <div class="enc-v2-weather-desc" id="enc-weather-desc">A carregar...</div>
+          <div class="enc-v2-weather-rain" id="enc-weather-rain-alert"></div>
         </div>
+        <div class="enc-v2-weather-icon" id="enc-weather-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:36px;height:36px;opacity:.7"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </div>
+      </button>
 
+      <!-- STATS -->
+      <div class="enc-v2-section-lbl">Equipa hoje</div>
+      <div class="enc-v2-stats">
+        <div class="enc-v2-stat">
+          <div class="enc-v2-stat-val" id="enc-v2-presentes">—</div>
+          <div class="enc-v2-stat-lbl">Presentes</div>
+        </div>
+        <div class="enc-v2-stat enc-v2-stat-div">
+          <div class="enc-v2-stat-val" id="enc-v2-faltas">—</div>
+          <div class="enc-v2-stat-lbl">Faltas</div>
+        </div>
+        <div class="enc-v2-stat enc-v2-stat-div">
+          <div class="enc-v2-stat-val enc-v2-stat-alert" id="enc-v2-pendentes">—</div>
+          <div class="enc-v2-stat-lbl">Pendentes</div>
+        </div>
       </div>
 
-      <!-- Barra de contexto: data/hora + estado do ponto -->
-      <div class="enc-ctx-bar">
-        <div>
-          <div class="enc-ctx-date" id="enc-ctx-date">—</div>
-          <div class="enc-ctx-time" id="enc-ctx-time">—</div>
-        </div>
-        <div class="enc-ctx-status pending" id="enc-ponto-status">
-          <div class="enc-ctx-dot"></div>
-          <span id="enc-ponto-status-txt">Ponto não registado</span>
-        </div>
+      <!-- PENDING ITEMS -->
+      <div class="enc-v2-section-lbl">Pendentes</div>
+      <div class="enc-v2-pending" id="enc-v2-pending">
+        <div class="enc-v2-pending-empty">A carregar...</div>
+      </div>
+
+      <!-- elementos hidden para compatibilidade com JS existente -->
+      <div style="display:none">
+        <div id="enc-obra-prazo-icon"></div>
+        <div id="enc-obra-prazo-days"></div>
+        <div id="enc-obra-prazo-label"></div>
+        <div id="enc-done-plandese"></div>
+        <div id="enc-done-aluguer"></div>
+        <div id="enc-ctx-date"></div>
+        <div id="enc-ctx-time"></div>
+        <div id="enc-ponto-status"><div class="enc-ctx-dot"></div><span id="enc-ponto-status-txt">Ponto não registado</span></div>
       </div>
 
     </div>
+
+    <!-- BOTTOM TAB BAR -->
+    <div class="enc-v2-tabbar">
+      <button class="enc-v2-tab enc-v2-tab-act" onclick="encVoltarHome()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/></svg>
+        <span>Início</span>
+      </button>
+      <button class="enc-v2-tab" onclick="encGoHistoricoEnc()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <span>Historial</span>
+      </button>
+      <button class="enc-v2-fab" id="enc-v2-fab" onclick="encToggleSheet()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" style="width:24px;height:24px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <button class="enc-v2-tab" onclick="">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <span>Perfil</span>
+      </button>
+      <button class="enc-v2-tab" onclick="">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <span>Alertas</span>
+      </button>
+    </div>
+
+    <!-- BOTTOM SHEET OVERLAY -->
+    <div class="enc-v2-overlay" id="enc-v2-overlay" onclick="encCloseSheet()"></div>
+
+    <!-- BOTTOM SHEET -->
+    <div class="enc-v2-sheet" id="enc-v2-sheet">
+      <div class="enc-v2-sheet-handle"></div>
+      <div class="enc-v2-sheet-title">Novo Registo</div>
+      <div class="enc-v2-sheet-sub">Selecione o tipo de registo</div>
+
+      <button class="enc-v2-sheet-item" onclick="encCloseSheet();encGoFolhaPontoPlandese()">
+        <div class="enc-v2-sheet-ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        </div>
+        <div class="enc-v2-sheet-info">
+          <div class="enc-v2-sheet-ititle">Folha de Ponto — Plandese</div>
+          <div class="enc-v2-sheet-isub">Registar presenças da equipa</div>
+        </div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="enc-v2-sheet-arr" style="width:16px;height:16px"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+
+      <button class="enc-v2-sheet-item" onclick="encCloseSheet();encGoFolhaPontoAluguer()">
+        <div class="enc-v2-sheet-ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <div class="enc-v2-sheet-info">
+          <div class="enc-v2-sheet-ititle">Folha de Ponto — Aluguer</div>
+          <div class="enc-v2-sheet-isub">Trabalhadores externos (MOA)</div>
+        </div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="enc-v2-sheet-arr" style="width:16px;height:16px"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+
+      <button class="enc-v2-sheet-item" onclick="encCloseSheet();encGoCombustivel()">
+        <div class="enc-v2-sheet-ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <div class="enc-v2-sheet-info">
+          <div class="enc-v2-sheet-ititle">Gasoleo / Combustível</div>
+          <div class="enc-v2-sheet-isub">Depósito ou viatura</div>
+        </div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="enc-v2-sheet-arr" style="width:16px;height:16px"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+
+      <button class="enc-v2-sheet-item" onclick="encCloseSheet();encGoEquipamentos()">
+        <div class="enc-v2-sheet-ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h7v7h-7z"/></svg>
+        </div>
+        <div class="enc-v2-sheet-info">
+          <div class="enc-v2-sheet-ititle">Equipamento</div>
+          <div class="enc-v2-sheet-isub">Registar movimento por QR code</div>
+        </div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="enc-v2-sheet-arr" style="width:16px;height:16px"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+
+      <button class="enc-v2-sheet-item" onclick="encCloseSheet();encGoComprasChat()">
+        <div class="enc-v2-sheet-ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+        </div>
+        <div class="enc-v2-sheet-info">
+          <div class="enc-v2-sheet-ititle">Compras</div>
+          <div class="enc-v2-sheet-isub">Solicitar materiais</div>
+        </div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="enc-v2-sheet-arr" style="width:16px;height:16px"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+
   </div>
 
   <!-- ECRÃ: ASSISTENTE DE COMPRAS (CHAT) -->

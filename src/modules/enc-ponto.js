@@ -17,26 +17,43 @@ import { stopCombQrScanner } from './enc-combustivel.js';
 
 function _encUpdatePrazoWidget(){
   const username=S.currentUser?.username||S.currentUser?.nome;
-  const obra=S.OBRAS.filter(o=>o.ativa&&o.encarregado_id&&o.prazo)
-    .find(o=>o.encarregado_id===username);
+  const obra=S.OBRAS.find(o=>o.ativa&&o.encarregado_id===username);
+  // compat: legacy widget elements (may be hidden)
   const valEl=document.getElementById('enc-obra-prazo-days');
   const lblEl=document.getElementById('enc-obra-prazo-label');
   const iconEl=document.getElementById('enc-obra-prazo-icon');
-  if(!valEl||!lblEl||!iconEl) return;
+  // v2 elements
+  const obraNomeEl=document.getElementById('enc-v2-obra-nome');
+  const prazoBadgeEl=document.getElementById('enc-v2-prazo-badge');
   if(!obra){
-    valEl.textContent='—';
-    lblEl.textContent='sem obra atribuída';
-    iconEl.style.background='#f9fafb'; iconEl.style.color='#9ca3af';
+    if(valEl) valEl.textContent='—';
+    if(lblEl) lblEl.textContent='sem obra atribuída';
+    if(iconEl){iconEl.style.background='#f9fafb'; iconEl.style.color='#9ca3af';}
+    if(obraNomeEl) obraNomeEl.textContent='Sem obra atribuída';
+    if(prazoBadgeEl) prazoBadgeEl.textContent='';
+    return;
+  }
+  if(obraNomeEl) obraNomeEl.textContent=obra.nome;
+  if(!obra.prazo){
+    if(valEl) valEl.textContent='—';
+    if(lblEl) lblEl.textContent=obra.nome;
+    if(prazoBadgeEl) prazoBadgeEl.textContent='';
     return;
   }
   const today=new Date(); today.setHours(0,0,0,0);
   const prazoDate=new Date(obra.prazo+'T00:00:00');
   const days=Math.ceil((prazoDate-today)/(1000*60*60*24));
-  valEl.textContent=days>0?days:'0';
-  lblEl.textContent=`dias · ${obra.nome}`;
-  if(days<=7){iconEl.style.background='#fef2f2';iconEl.style.color='#dc2626';}
-  else if(days<=21){iconEl.style.background='#fff7ed';iconEl.style.color='#ea580c';}
-  else{iconEl.style.background='#f0fdf4';iconEl.style.color='#16a34a';}
+  if(valEl) valEl.textContent=days>0?days:'0';
+  if(lblEl) lblEl.textContent=`dias · ${obra.nome}`;
+  if(iconEl){
+    if(days<=7){iconEl.style.background='#fef2f2';iconEl.style.color='#dc2626';}
+    else if(days<=21){iconEl.style.background='#fff7ed';iconEl.style.color='#ea580c';}
+    else{iconEl.style.background='#f0fdf4';iconEl.style.color='#16a34a';}
+  }
+  if(prazoBadgeEl){
+    prazoBadgeEl.textContent=days>0?`${days}d`:'vencido';
+    prazoBadgeEl.style.color=days<=7?'#ef4444':days<=21?'#f97316':'#22c55e';
+  }
 }
 
 const _WMO_DESC={
@@ -146,10 +163,101 @@ function encCloseWeatherModal(){
   if(modal) modal.style.display='none';
 }
 
+// ── FAB + bottom sheet ──────────────────────────────────────
+const _FAB_SVG_PLUS=`<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" style="width:24px;height:24px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+const _FAB_SVG_CLOSE=`<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+
+function encToggleSheet(){
+  const sheet=document.getElementById('enc-v2-sheet');
+  const overlay=document.getElementById('enc-v2-overlay');
+  const fab=document.getElementById('enc-v2-fab');
+  if(!sheet||!overlay) return;
+  const isOpen=sheet.classList.contains('open');
+  if(isOpen){
+    sheet.classList.remove('open');
+    overlay.classList.remove('visible');
+    fab?.classList.remove('open');
+    if(fab) fab.innerHTML=_FAB_SVG_PLUS;
+  } else {
+    sheet.classList.add('open');
+    overlay.classList.add('visible');
+    fab?.classList.add('open');
+    if(fab) fab.innerHTML=_FAB_SVG_CLOSE;
+  }
+}
+
+function encCloseSheet(){
+  const sheet=document.getElementById('enc-v2-sheet');
+  const overlay=document.getElementById('enc-v2-overlay');
+  const fab=document.getElementById('enc-v2-fab');
+  sheet?.classList.remove('open');
+  overlay?.classList.remove('visible');
+  fab?.classList.remove('open');
+  if(fab) fab.innerHTML=_FAB_SVG_PLUS;
+}
+
+// ── Home stats ──────────────────────────────────────────────
+async function _encLoadHomeStats(){
+  const username=S.currentUser?.username||S.currentUser?.nome;
+  const obra=S.OBRAS.find(o=>o.ativa&&o.encarregado_id===username);
+  const presEl=document.getElementById('enc-v2-presentes');
+  const faltEl=document.getElementById('enc-v2-faltas');
+  const pendEl=document.getElementById('enc-v2-pendentes');
+  const listEl=document.getElementById('enc-v2-pending');
+  if(!obra){
+    if(presEl) presEl.textContent='—';
+    if(faltEl) faltEl.textContent='—';
+    if(pendEl) pendEl.textContent='—';
+    if(listEl) listEl.innerHTML='<div class="enc-v2-pending-empty">Sem obra atribuída</div>';
+    return;
+  }
+  try{
+    const today=fmt(new Date());
+    const {data:rows}=await sb.from('registos_ponto').select('*').eq('data',today).eq('obra_id',obra.id);
+    const all=rows||[];
+    const presentes=all.filter(r=>!r.tipo||r.tipo==='Presença');
+    const faltas=all.filter(r=>r.tipo&&r.tipo!=='Presença');
+    const semSaida=presentes.filter(r=>!r.saida);
+    if(presEl) presEl.textContent=presentes.length;
+    if(faltEl) faltEl.textContent=faltas.length;
+    if(pendEl) pendEl.textContent=semSaida.length;
+    if(listEl){
+      if(!all.length){
+        listEl.innerHTML='<div class="enc-v2-pending-empty">Sem registos para hoje</div>';
+      } else if(!semSaida.length){
+        listEl.innerHTML='<div class="enc-v2-pending-empty">Todos os registos completos ✓</div>';
+      } else {
+        listEl.innerHTML=semSaida.map(r=>{
+          const c=S.COLABORADORES.find(x=>x.n===r.colab_numero);
+          const nome=c?c.nome:`Nº ${r.colab_numero}`;
+          const ini=nome.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();
+          return `<div class="enc-v2-pending-item">
+            <div class="enc-v2-pending-ico" style="font-weight:700;font-size:12px;color:#1e4a8a">${ini}</div>
+            <div class="enc-v2-pending-info">
+              <div class="enc-v2-pi-title">${nome}</div>
+              <div class="enc-v2-pi-sub">Entrada: ${r.entrada?.slice(0,5)||'—'} · Sem saída</div>
+            </div>
+          </div>`;
+        }).join('');
+      }
+    }
+  }catch(e){
+    if(presEl) presEl.textContent='—';
+    if(faltEl) faltEl.textContent='—';
+    if(pendEl) pendEl.textContent='—';
+    if(listEl) listEl.innerHTML='<div class="enc-v2-pending-empty">Erro ao carregar</div>';
+  }
+}
+
 async function initEnc(){
-  // Mostrar home imediatamente (antes das chamadas async ao Supabase)
+  // Greeting + nome
   const _nomeEl = document.getElementById('enc-home-nome');
   if (_nomeEl) _nomeEl.textContent = S.currentUser?.nome?.split(' ')[0] || 'Encarregado';
+  const _greetEl = document.getElementById('enc-v2-greeting');
+  if(_greetEl){ const h=new Date().getHours(); _greetEl.textContent=h<12?'Bom dia':h<19?'Boa tarde':'Boa noite'; }
+  // Activar home e esconder app bar
+  const _encAppEl=document.getElementById('enc-app');
+  if(_encAppEl) _encAppEl.classList.add('enc-home-active');
   document.getElementById('enc-screen0').style.display='flex';
   ['enc-screen1','enc-screen2','enc-screen-equip',
    'enc-screen-combustivel','enc-screen-comb-deposito','enc-screen-comb-viatura',
@@ -181,9 +289,10 @@ async function initEnc(){
   // Reforçar visibilidade (caso algo tenha mudado durante o carregamento)
   document.getElementById('enc-screen0').style.display='flex';
   const s1=document.getElementById('enc-screen1'); if(s1) s1.style.display='none';
-  // Widgets: prazo da obra + meteorologia
+  // Widgets: prazo da obra + meteorologia + home stats
   _encUpdatePrazoWidget();
   _encLoadWeather();
+  _encLoadHomeStats();
 }
 
 async function encPassarColaboradores(){
@@ -622,13 +731,18 @@ function encGoCombustivel(){
 function encVoltarHome(){
   stopEncQrScanner();
   stopCombQrScanner();
+  encCloseSheet();
   _encHideAll();
   document.getElementById('enc-screen0').style.display='flex';
   document.getElementById('enc-screen0').style.flexDirection='column';
+  const _encAppEl=document.getElementById('enc-app');
+  if(_encAppEl) _encAppEl.classList.add('enc-home-active');
   _encUpdateCtxBar();
+  _encLoadHomeStats();
 }
 
 function _encHideAll(){
+  document.getElementById('enc-app')?.classList.remove('enc-home-active');
   ['enc-screen0','enc-screen1','enc-screen2','enc-screen-equip','enc-screen-aluguer','enc-screen-historico-enc','enc-screen-combustivel','enc-screen-comb-deposito','enc-screen-comb-viatura',
    'enc-screen-compras-chat'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.style.display='none';
@@ -643,5 +757,6 @@ export {
   encGoMenuPonto, encGoFolhaPontoPlandese, encGoFolhaPonto, encGoHistoricoEnc,
   encLoadHistorico, encGoFolhaPontoAluguer, encGoEquipamentos, encGoCombustivel,
   encVoltarHome, _encHideAll,
-  encOpenWeatherModal, encCloseWeatherModal
+  encOpenWeatherModal, encCloseWeatherModal,
+  encToggleSheet, encCloseSheet
 };
